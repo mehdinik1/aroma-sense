@@ -1,0 +1,32 @@
+[
+  {
+    "slug": "bulk-orders",
+    "title": "Bulk & Wholesale Orders",
+    "bodyHtml": "<p>Aroma Sense shower systems are used by hotels, resorts, gyms, med-spas and property managers across the United States. If you're outfitting more than a handful of bathrooms, we can help with volume pricing and a rollout plan.</p><h2>What we offer</h2><ul><li>Tiered wholesale pricing on shower heads, cartridges and microfiber filters</li><li>A recurring cartridge supply so scent and filtration stay fresh</li><li>Installation guidance for your maintenance team</li><li>Co-branded amenity cards for guest rooms and locker rooms</li></ul><h2>Get a quote</h2><p>Use our contact form with your organization name, the number of shower heads you need, and your timeline, and we'll get back to you within one business day.</p>"
+  },
+  {
+    "slug": "warranty",
+    "title": "Warranty & Returns",
+    "bodyHtml": "<p>Every Aroma Sense shower head is covered by a <strong>1-year limited warranty</strong> against manufacturing defects from the date of delivery.</p><h2>Warranty claims</h2><p>If your shower head develops a defect in normal use, contact us with your order reference and a short description (a photo or video helps). We'll repair or replace it at no charge, including shipping.</p><h2>Returns</h2><p>Unused items in their original packaging can be returned within 30 days for a refund to your original payment method. For hygiene reasons, opened vitamin C cartridges can't be returned. See the <a href=\"/pages/returns-policy\">full returns policy</a> for details.</p><h2>Not covered</h2><p>Normal cartridge depletion, mineral scale from hard water that isn't cleaned periodically, or damage from drops, over-tightening or non-standard plumbing.</p>"
+  },
+  {
+    "slug": "shipping-policy",
+    "title": "Shipping Policy",
+    "bodyHtml": "<p>Aroma Sense ships to addresses within the United States only. All prices are shown and charged in US dollars.</p><h2>Rates &amp; delivery</h2><ul><li><strong>Standard shipping — free.</strong> Delivered in 3–6 business days by USPS or UPS Ground.</li><li><strong>Expedited shipping — $19.99.</strong> Delivered in 1–2 business days when ordered before 12pm ET.</li></ul><h2>Processing</h2><p>Orders are packed and shipped within 1–2 business days. You'll receive a tracking number by email as soon as your order leaves our warehouse.</p><h2>Address changes</h2><p>If you need to correct a shipping address, contact us within 2 hours of ordering and we'll do our best to update it before the order ships.</p>"
+  },
+  {
+    "slug": "returns-policy",
+    "title": "Returns &amp; Refunds",
+    "bodyHtml": "<p>We want you to love your Aroma Sense shower. If something isn't right, here's how returns work.</p><h2>30-day returns</h2><p>Unused items in their original packaging may be returned within 30 days of delivery for a refund to your original payment method. Return shipping is the customer's responsibility unless the item arrived damaged or incorrect.</p><h2>What can't be returned</h2><p>For hygiene reasons, opened vitamin C cartridges cannot be returned.</p><h2>Damaged or wrong item</h2><p>Email us a photo within 7 days of delivery and we'll send a replacement or full refund, including shipping, at no cost to you.</p><h2>Starting a return</h2><p>Contact us with your order reference and we'll send a prepaid label or return instructions.</p>"
+  },
+  {
+    "slug": "privacy-policy",
+    "title": "Privacy Policy",
+    "bodyHtml": "<p>This policy explains what information Aroma Sense collects and how it is used.</p><h2>What we collect</h2><p>When you place an order we collect your name, email, phone number, shipping and billing address, and order details. Payment card information is entered directly with our payment processor, Stripe, and is never stored on our servers.</p><h2>How we use it</h2><ul><li>To process, ship and support your orders</li><li>To send order and shipping confirmations</li><li>To send marketing email, only if you opt in — you can unsubscribe at any time</li></ul><h2>Who we share it with</h2><p>We share data only with the services needed to run the store: our payment processor (Stripe), our shipping carriers, and our email provider. We do not sell personal information.</p><h2>Your choices</h2><p>You can request a copy of your data or ask us to delete it by contacting us.</p>"
+  },
+  {
+    "slug": "terms-of-service",
+    "title": "Terms of Service",
+    "bodyHtml": "<p>By using this website and placing an order you agree to these terms.</p><h2>Orders</h2><p>All orders are subject to acceptance and product availability. Prices are in US dollars and may change without notice. We may refuse or cancel an order and issue a full refund at our discretion.</p><h2>Shipping</h2><p>We ship within the United States only. Title and risk of loss pass to you on delivery to the carrier.</p><h2>Product use</h2><p>Aroma Sense products are for personal household use. Follow the included instructions for installation and cartridge replacement. Essential-oil cartridges are not intended to be ingested.</p><h2>Contact</h2><p>Questions about these terms can be sent through our contact page.</p>"
+  }
+]

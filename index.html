@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141310" />
+    <title>Aroma Sense — Vitamin C Aromatherapy Shower Heads</title>
+    <meta
+      name="description"
+      content="Aroma Sense turns your daily shower into a spa. Vitamin C aromatherapy shower heads, cartridges and starter kits that filter chlorine for healthier hair and skin. Free U.S. shipping."
+    />
+    <meta property="og:title" content="Aroma Sense — Vitamin C Aromatherapy Shower Heads" />
+    <meta
+      property="og:description"
+      content="Spa-quality vitamin C aromatherapy showers. Filters chlorine, boosts pressure, and fills your shower with essential-oil aromatherapy."
+    />
+    <meta property="og:type" content="website" />
+  </head>
+  <body>
+    <script>
+      // Set the theme before first paint so switching to light doesn't flash dark first.
+      try {
+        if (localStorage.getItem('aroma-sense-theme-v1') === 'light') {
+          document.documentElement.dataset.theme = 'light'
+        }
+      } catch {}
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" width="1200" height="760">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#181410"/><stop offset="1" stop-color="#221b14"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.299" cy="0.388" r="0.9">
+      <stop offset="0" stop-color="#c9a75e" stop-opacity="0.200"/>
+      <stop offset="0.55" stop-color="#c9a75e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <rect width="1200" height="760" fill="url(#glow)"/>
+  <g><circle cx="806" cy="269" r="70" fill="none" stroke="#e7cf9b" stroke-width="1.44" stroke-opacity="0.520"/><circle cx="806" cy="269" r="152" fill="none" stroke="#d8b978" stroke-width="0.97" stroke-opacity="0.490"/><circle cx="806" cy="269" r="230" fill="none" stroke="#c9a75e" stroke-width="1.95" stroke-opacity="0.460"/><circle cx="806" cy="269" r="266" fill="none" stroke="#b08d47" stroke-width="1.92" stroke-opacity="0.430"/><circle cx="806" cy="269" r="360" fill="none" stroke="#f0dcae" stroke-width="1.53" stroke-opacity="0.400"/><circle cx="806" cy="269" r="464" fill="none" stroke="#e7cf9b" stroke-width="0.94" stroke-opacity="0.370"/><circle cx="806" cy="269" r="546" fill="none" stroke="#d8b978" stroke-width="0.62" stroke-opacity="0.340"/><circle cx="806" cy="269" r="604" fill="none" stroke="#c9a75e" stroke-width="1.82" stroke-opacity="0.310"/><circle cx="806" cy="269" r="686" fill="none" stroke="#b08d47" stroke-width="0.94" stroke-opacity="0.280"/><circle cx="806" cy="269" r="683" fill="none" stroke="#f0dcae" stroke-width="1.83" stroke-opacity="0.250"/><circle cx="806" cy="269" r="818" fill="none" stroke="#e7cf9b" stroke-width="1.83" stroke-opacity="0.220"/><circle cx="806" cy="269" r="808" fill="none" stroke="#d8b978" stroke-width="1.31" stroke-opacity="0.190"/><circle cx="806" cy="269" r="903" fill="none" stroke="#c9a75e" stroke-width="0.64" stroke-opacity="0.160"/><circle cx="806" cy="269" r="997" fill="none" stroke="#b08d47" stroke-width="1.47" stroke-opacity="0.130"/><circle cx="806" cy="269" r="1046" fill="none" stroke="#f0dcae" stroke-width="1.42" stroke-opacity="0.100"/><circle cx="806" cy="269" r="1154" fill="none" stroke="#e7cf9b" stroke-width="1.31" stroke-opacity="0.070"/><circle cx="806" cy="269" r="57" fill="#e7cf9b" fill-opacity="0.55"/></g>
+    <g transform="translate(1050 608) scale(1.15)" opacity="0.22">
+    <circle cx="50" cy="38" r="27" fill="none" stroke="#c9a75e" stroke-width="5"/>
+    <circle cx="50" cy="38" r="2.6" fill="#c9a75e"/>
+    <circle cx="50" cy="28.5" r="2.2" fill="#c9a75e"/>
+    <circle cx="58.2" cy="33.2" r="2.2" fill="#c9a75e"/>
+    <circle cx="58.2" cy="42.8" r="2.2" fill="#c9a75e"/>
+    <circle cx="50" cy="47.5" r="2.2" fill="#c9a75e"/>
+    <circle cx="41.8" cy="42.8" r="2.2" fill="#c9a75e"/>
+    <circle cx="41.8" cy="33.2" r="2.2" fill="#c9a75e"/>
+    <path d="M58 62c9 12 9 23 0 23-9 0-9-11 0-23Z" fill="#b08d47"/></g>
+    <g font-family="Georgia, 'Times New Roman', serif">
+      <text x="64" y="90" fill="#e7cf9b" font-size="23" letter-spacing="6" font-weight="600" xml:space="preserve">JOURNAL</text>
+      <line x1="64" y1="112" x2="164" y2="112" stroke="#c9a75e" stroke-opacity="0.8" stroke-width="1.5"/>
+    </g>
+  <rect width="1200" height="760" fill="none" stroke="#c9a75e" stroke-opacity="0.16" stroke-width="1.5"/>
+</svg>
