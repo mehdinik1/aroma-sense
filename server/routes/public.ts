@@ -4,6 +4,7 @@ import { db, rawArticles, rawPages } from '../db.ts'
 import { getCollection, getProduct, listCollections, listProducts } from '../catalog.ts'
 import { paymentsEnabled } from '../env.ts'
 import { loyalty, SUBSCRIBABLE_TYPES, WELCOME_DISCOUNT_CODE, WELCOME_DISCOUNT_PCT } from '../loyalty.ts'
+import { sendContactAlert } from '../email.ts'
 
 export const publicRouter = Router()
 
@@ -123,5 +124,6 @@ publicRouter.post('/contact', async (req, res) => {
   }
   const { name, email, message } = parsed.data
   await db.prepare('INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)').bind(name, email, message).run()
+  await sendContactAlert({ name, email, message })
   res.json({ ok: true })
 })

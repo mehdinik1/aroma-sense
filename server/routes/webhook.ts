@@ -5,6 +5,7 @@ import { stripe } from '../stripe.ts'
 import { rawBody } from '../bodyParser.ts'
 import { env, paymentsEnabled } from '../env.ts'
 import { pointsForSpend } from '../loyalty.ts'
+import { sendOrderEmails } from '../email.ts'
 
 export const webhookRouter = Router()
 
@@ -116,9 +117,9 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
   // stock
   const { results: items } = await db
-    .prepare('SELECT product_handle, quantity FROM order_items WHERE order_id = ?')
+    .prepare('SELECT product_handle, quantity, title, variant_title, price_cents FROM order_items WHERE order_id = ?')
     .bind(order.id)
-    .all<{ product_handle: string; quantity: number }>()
+    .all<{ product_handle: string; quantity: number; title: string; variant_title: string | null; price_cents: number }>()
   for (const it of items) {
     if (await getOverride(it.product_handle)) {
       batch.push(
@@ -147,6 +148,17 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   await db.batch(batch)
 
   console.log(`[webhook] order ${reference} paid (+${pointsEarned} pts)`)
+
+  await sendOrderEmails({
+    reference,
+    email: session.customer_details?.email ?? null,
+    name: session.customer_details?.name ?? null,
+    shippingAddress,
+    totalCents: session.amount_total ?? order.subtotal_cents,
+    shippingCents: session.total_details?.amount_shipping ?? 0,
+    pointsEarned,
+    items,
+  })
 }
 
 async function upsertSubscription(sub: Stripe.Subscription) {

@@ -19,6 +19,9 @@ export const env = {
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
   stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  emailFrom: process.env.EMAIL_FROM || 'Aroma Sense <orders@vitamincshower.com>',
+  adminNotifyEmail: process.env.ADMIN_NOTIFY_EMAIL || 'admin@vitamincshower.com',
   isProd: process.env.NODE_ENV === 'production',
 }
 
