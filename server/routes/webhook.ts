@@ -117,9 +117,9 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
   // stock
   const { results: items } = await db
-    .prepare('SELECT product_handle, quantity, title, variant_title, price_cents FROM order_items WHERE order_id = ?')
+    .prepare('SELECT product_handle, quantity, title, variant_title, price_cents, image FROM order_items WHERE order_id = ?')
     .bind(order.id)
-    .all<{ product_handle: string; quantity: number; title: string; variant_title: string | null; price_cents: number }>()
+    .all<{ product_handle: string; quantity: number; title: string; variant_title: string | null; price_cents: number; image: string | null }>()
   for (const it of items) {
     if (await getOverride(it.product_handle)) {
       batch.push(
