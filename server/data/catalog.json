@@ -16,8 +16,8 @@
         "id": 43255662248049,
         "title": null,
         "sku": "ARO-LUXE-BK-WC-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -40,8 +40,8 @@
         "id": 43255661887601,
         "title": null,
         "sku": "ARO-LUXE-BK-Lem-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -64,8 +64,8 @@
         "id": 43255660707953,
         "title": null,
         "sku": "ARO-LUXE-BK-TTLav-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -88,8 +88,8 @@
         "id": 43255662346353,
         "title": null,
         "sku": "ARO-LUXE-BK-Ocean-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -112,8 +112,8 @@
         "id": 43255661035633,
         "title": null,
         "sku": "ARO-LUXE-BK-DITF-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -136,8 +136,8 @@
         "id": 43255661461617,
         "title": null,
         "sku": "ARO-LUXE-BK-MT-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -162,8 +162,8 @@
         "id": 43255660347505,
         "title": null,
         "sku": "ARO-LUXE-BK-Lav-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -193,7 +193,7 @@
         "id": 43233616724081,
         "title": null,
         "sku": "AS-B-HB",
-        "priceCents": 3999,
+        "priceCents": 4999,
         "compareAtCents": 0,
         "available": true
       }
@@ -226,7 +226,7 @@
         "id": 42989091487857,
         "title": null,
         "sku": "ARO-Lav",
-        "priceCents": 1499,
+        "priceCents": 1874,
         "compareAtCents": 0,
         "available": true
       }
@@ -259,7 +259,7 @@
         "id": 42989082345585,
         "title": null,
         "sku": "ARO-Lem",
-        "priceCents": 1499,
+        "priceCents": 1874,
         "compareAtCents": 0,
         "available": true
       }
@@ -292,7 +292,7 @@
         "id": 42989077069937,
         "title": null,
         "sku": "ARO-Ocean",
-        "priceCents": 1499,
+        "priceCents": 1874,
         "compareAtCents": 0,
         "available": true
       }
@@ -325,7 +325,7 @@
         "id": 42989070090353,
         "title": null,
         "sku": "ARO-MT",
-        "priceCents": 1499,
+        "priceCents": 1874,
         "compareAtCents": 0,
         "available": true
       }
@@ -358,7 +358,7 @@
         "id": 42989062226033,
         "title": null,
         "sku": "ARO-DITF",
-        "priceCents": 1499,
+        "priceCents": 1874,
         "compareAtCents": 0,
         "available": true
       }
@@ -391,7 +391,7 @@
         "id": 42989053313137,
         "title": null,
         "sku": "ARO-TTlav",
-        "priceCents": 1499,
+        "priceCents": 1874,
         "compareAtCents": 0,
         "available": true
       }
@@ -424,7 +424,7 @@
         "id": 42989038076017,
         "title": null,
         "sku": "ARO-WC",
-        "priceCents": 1499,
+        "priceCents": 1874,
         "compareAtCents": 0,
         "available": true
       }
@@ -461,7 +461,7 @@
         "id": 42985408954481,
         "title": null,
         "sku": "ARO-LUXE-BK",
-        "priceCents": 10500,
+        "priceCents": 13125,
         "compareAtCents": 0,
         "available": true
       }
@@ -490,7 +490,7 @@
         "id": 31164641575025,
         "title": null,
         "sku": "AS-VITA-HH-P",
-        "priceCents": 4299,
+        "priceCents": 5374,
         "compareAtCents": 0,
         "available": true
       }
@@ -514,8 +514,8 @@
         "id": 31953643995249,
         "title": null,
         "sku": "SK-Rain-V-MFF",
-        "priceCents": 19500,
-        "compareAtCents": 22000,
+        "priceCents": 24375,
+        "compareAtCents": 27500,
         "available": true
       }
     ],
@@ -538,8 +538,8 @@
         "id": 31953638588529,
         "title": null,
         "sku": "SK-Rain-E-MFF",
-        "priceCents": 19500,
-        "compareAtCents": 22000,
+        "priceCents": 24375,
+        "compareAtCents": 27500,
         "available": true
       }
     ],
@@ -562,8 +562,8 @@
         "id": 31953635836017,
         "title": null,
         "sku": "SK-Rain-J-MFF",
-        "priceCents": 19500,
-        "compareAtCents": 22000,
+        "priceCents": 24375,
+        "compareAtCents": 27500,
         "available": true
       }
     ],
@@ -586,8 +586,8 @@
         "id": 31953634558065,
         "title": null,
         "sku": "SK-Rain-Lav-MFF",
-        "priceCents": 19500,
-        "compareAtCents": 22000,
+        "priceCents": 24375,
+        "compareAtCents": 27500,
         "available": true
       }
     ],
@@ -616,8 +616,8 @@
         "id": 31953618894961,
         "title": null,
         "sku": "SK-Rain-L-MFF",
-        "priceCents": 19500,
-        "compareAtCents": 22000,
+        "priceCents": 24375,
+        "compareAtCents": 27500,
         "available": true
       }
     ],
@@ -640,8 +640,8 @@
         "id": 31953630920817,
         "title": null,
         "sku": "SK-Rain-M-MFF",
-        "priceCents": 19500,
-        "compareAtCents": 22000,
+        "priceCents": 24375,
+        "compareAtCents": 27500,
         "available": true
       }
     ],
@@ -666,7 +666,7 @@
         "id": 32067766288497,
         "title": null,
         "sku": "AS-MFF-R",
-        "priceCents": 999,
+        "priceCents": 1249,
         "compareAtCents": 0,
         "available": true
       }
@@ -693,7 +693,7 @@
         "id": 17101619986545,
         "title": null,
         "sku": "WF-SB",
-        "priceCents": 1799,
+        "priceCents": 2249,
         "compareAtCents": 0,
         "available": true
       }
@@ -734,7 +734,7 @@
         "id": 30726968213617,
         "title": null,
         "sku": "AS-Rainfall",
-        "priceCents": 16500,
+        "priceCents": 20625,
         "compareAtCents": 0,
         "available": true
       }
@@ -766,7 +766,7 @@
         "id": 17101602488433,
         "title": null,
         "sku": "AS-VITA-WM-M",
-        "priceCents": 3099,
+        "priceCents": 3874,
         "compareAtCents": 0,
         "available": true
       }
@@ -796,7 +796,7 @@
         "id": 31229948592241,
         "title": null,
         "sku": null,
-        "priceCents": 2599,
+        "priceCents": 3249,
         "compareAtCents": 0,
         "available": true
       }
@@ -820,7 +820,7 @@
         "id": 31164574990449,
         "title": null,
         "sku": "AS-VITA-WM-P",
-        "priceCents": 3099,
+        "priceCents": 3874,
         "compareAtCents": 0,
         "available": true
       }
@@ -851,7 +851,7 @@
         "id": 18178382332017,
         "title": "Large",
         "sku": "AS-MFF-2",
-        "priceCents": 1399,
+        "priceCents": 1749,
         "compareAtCents": 0,
         "available": true
       },
@@ -859,7 +859,7 @@
         "id": 17102676983921,
         "title": "Medium",
         "sku": "AS-MFF-1",
-        "priceCents": 1399,
+        "priceCents": 1749,
         "compareAtCents": 0,
         "available": true
       },
@@ -867,7 +867,7 @@
         "id": 18178382397553,
         "title": "Prestige",
         "sku": "AS-MFF-3",
-        "priceCents": 1399,
+        "priceCents": 1749,
         "compareAtCents": 0,
         "available": true
       },
@@ -875,7 +875,7 @@
         "id": 32222190141553,
         "title": "Rainfall",
         "sku": "AS-MFF-R",
-        "priceCents": 1399,
+        "priceCents": 1749,
         "compareAtCents": 0,
         "available": true
       },
@@ -883,7 +883,7 @@
         "id": 43511087595633,
         "title": "Luxe",
         "sku": "AS-MFF-luxe",
-        "priceCents": 1399,
+        "priceCents": 1749,
         "compareAtCents": 0,
         "available": true
       }
@@ -910,8 +910,8 @@
         "id": 17101718323313,
         "title": null,
         "sku": "SK-AS-WM-Vit-C-L-MFF-L",
-        "priceCents": 14000,
-        "compareAtCents": 15800,
+        "priceCents": 17500,
+        "compareAtCents": 19750,
         "available": true
       }
     ],
@@ -937,8 +937,8 @@
         "id": 17101708689521,
         "title": null,
         "sku": "SK-AS-JET-VitC-V-MFF-L",
-        "priceCents": 12500,
-        "compareAtCents": 13800,
+        "priceCents": 15625,
+        "compareAtCents": 17250,
         "available": true
       }
     ],
@@ -964,8 +964,8 @@
         "id": 17101706625137,
         "title": null,
         "sku": "SK-PREST-HB-V-MFF",
-        "priceCents": 21500,
-        "compareAtCents": 24000,
+        "priceCents": 26875,
+        "compareAtCents": 30000,
         "available": true
       }
     ],
@@ -991,8 +991,8 @@
         "id": 17101703217265,
         "title": null,
         "sku": "SK-AS-L-HH-HB-V-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -1018,8 +1018,8 @@
         "id": 17101701644401,
         "title": null,
         "sku": "SK-M-HH-HB-V-MFF",
-        "priceCents": 17000,
-        "compareAtCents": 19000,
+        "priceCents": 21250,
+        "compareAtCents": 23750,
         "available": true
       }
     ],
@@ -1050,7 +1050,7 @@
         "id": 17101699940465,
         "title": null,
         "sku": "VIT-C-V-W",
-        "priceCents": 3099,
+        "priceCents": 3874,
         "compareAtCents": 0,
         "available": true
       }
@@ -1082,7 +1082,7 @@
         "id": 17101699285105,
         "title": null,
         "sku": "AS-VITA-HH-Vanilla",
-        "priceCents": 4299,
+        "priceCents": 5374,
         "compareAtCents": 0,
         "available": true
       }
@@ -1109,8 +1109,8 @@
         "id": 17101696499825,
         "title": null,
         "sku": "SK-AS-WM-VitC-LAV-MFF-L",
-        "priceCents": 14000,
-        "compareAtCents": 15800,
+        "priceCents": 17500,
+        "compareAtCents": 19750,
         "available": true
       }
     ],
@@ -1135,7 +1135,7 @@
         "id": 17101694861425,
         "title": null,
         "sku": "AS-SC-P",
-        "priceCents": 1699,
+        "priceCents": 2124,
         "compareAtCents": 0,
         "available": true
       }
@@ -1161,7 +1161,7 @@
         "id": 17101693485169,
         "title": null,
         "sku": "AS-P-SHELL",
-        "priceCents": 4599,
+        "priceCents": 5749,
         "compareAtCents": 0,
         "available": true
       }
@@ -1187,7 +1187,7 @@
         "id": 17101689585777,
         "title": null,
         "sku": "SP-HH",
-        "priceCents": 1199,
+        "priceCents": 1499,
         "compareAtCents": 0,
         "available": true
       }
@@ -1213,7 +1213,7 @@
         "id": 17101686014065,
         "title": null,
         "sku": "SP-P",
-        "priceCents": 1199,
+        "priceCents": 1499,
         "compareAtCents": 0,
         "available": true
       }
@@ -1240,8 +1240,8 @@
         "id": 17101682311281,
         "title": null,
         "sku": "SK-M-HH-HB-L-MFF",
-        "priceCents": 17000,
-        "compareAtCents": 19000,
+        "priceCents": 21250,
+        "compareAtCents": 23750,
         "available": true
       }
     ],
@@ -1267,8 +1267,8 @@
         "id": 17101680279665,
         "title": null,
         "sku": "701-HB-EUCALPY-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -1294,8 +1294,8 @@
         "id": 17101677953137,
         "title": null,
         "sku": "SK-PREST-HB-L-MFF",
-        "priceCents": 21500,
-        "compareAtCents": 24000,
+        "priceCents": 26875,
+        "compareAtCents": 30000,
         "available": true
       }
     ],
@@ -1322,8 +1322,8 @@
         "id": 17101674971249,
         "title": null,
         "sku": "SK-PREST-HB-CM-MFF",
-        "priceCents": 21500,
-        "compareAtCents": 24000,
+        "priceCents": 26875,
+        "compareAtCents": 30000,
         "available": true
       }
     ],
@@ -1349,8 +1349,8 @@
         "id": 17101673201777,
         "title": null,
         "sku": "SK-PREST-HB-J-MFF",
-        "priceCents": 21500,
-        "compareAtCents": 24000,
+        "priceCents": 26875,
+        "compareAtCents": 30000,
         "available": true
       }
     ],
@@ -1376,8 +1376,8 @@
         "id": 17101673070705,
         "title": null,
         "sku": "SK-PREST-HB-LAV-MFF",
-        "priceCents": 21500,
-        "compareAtCents": 24000,
+        "priceCents": 26875,
+        "compareAtCents": 30000,
         "available": true
       }
     ],
@@ -1403,8 +1403,8 @@
         "id": 17101672579185,
         "title": null,
         "sku": "SK-PREST-HB-E-MFF",
-        "priceCents": 21500,
-        "compareAtCents": 24000,
+        "priceCents": 26875,
+        "compareAtCents": 30000,
         "available": true
       }
     ],
@@ -1430,8 +1430,8 @@
         "id": 17101671006321,
         "title": null,
         "sku": "SK-AS-JET-VitC-L-MFF-L",
-        "priceCents": 12500,
-        "compareAtCents": 13800,
+        "priceCents": 15625,
+        "compareAtCents": 17250,
         "available": true
       }
     ],
@@ -1457,8 +1457,8 @@
         "id": 17101668843633,
         "title": null,
         "sku": "SK-AS-JET-VitC-CM-MFF-L",
-        "priceCents": 12500,
-        "compareAtCents": 13800,
+        "priceCents": 15625,
+        "compareAtCents": 17250,
         "available": true
       }
     ],
@@ -1484,8 +1484,8 @@
         "id": 17101667041393,
         "title": null,
         "sku": "SK-AS-JET-VitC-E-MFF-L",
-        "priceCents": 12500,
-        "compareAtCents": 13800,
+        "priceCents": 15625,
+        "compareAtCents": 17250,
         "available": true
       }
     ],
@@ -1511,8 +1511,8 @@
         "id": 17101665271921,
         "title": null,
         "sku": "SK-AS-JET-VitC-J-MFF-L",
-        "priceCents": 12500,
-        "compareAtCents": 13800,
+        "priceCents": 15625,
+        "compareAtCents": 17250,
         "available": true
       }
     ],
@@ -1538,8 +1538,8 @@
         "id": 17101664387185,
         "title": null,
         "sku": "SK-AS-JET-VitC-LAV-MFF-L",
-        "priceCents": 12500,
-        "compareAtCents": 13800,
+        "priceCents": 15625,
+        "compareAtCents": 17250,
         "available": true
       }
     ],
@@ -1574,7 +1574,7 @@
         "id": 17101661438065,
         "title": null,
         "sku": "AS-Prestige",
-        "priceCents": 14500,
+        "priceCents": 18125,
         "compareAtCents": 0,
         "available": true
       }
@@ -1608,7 +1608,7 @@
         "id": 17101658521713,
         "title": null,
         "sku": "AS-JET",
-        "priceCents": 9500,
+        "priceCents": 11875,
         "compareAtCents": 0,
         "available": true
       }
@@ -1637,8 +1637,8 @@
         "id": 17101658062961,
         "title": null,
         "sku": "SK-AS-WM-VitC-J-MFF-L",
-        "priceCents": 14000,
-        "compareAtCents": 15800,
+        "priceCents": 17500,
+        "compareAtCents": 19750,
         "available": true
       }
     ],
@@ -1664,8 +1664,8 @@
         "id": 17101656752241,
         "title": null,
         "sku": "SK-AS-WM-VitC-E-MFF-L",
-        "priceCents": 14000,
-        "compareAtCents": 15800,
+        "priceCents": 17500,
+        "compareAtCents": 19750,
         "available": true
       }
     ],
@@ -1691,8 +1691,8 @@
         "id": 17101654884465,
         "title": null,
         "sku": "SK-AS-WM-VitC-CM-MFF-L",
-        "priceCents": 14000,
-        "compareAtCents": 15800,
+        "priceCents": 17500,
+        "compareAtCents": 19750,
         "available": true
       }
     ],
@@ -1718,8 +1718,8 @@
         "id": 17101649313905,
         "title": null,
         "sku": "SK-AS-WM-VitC-Van-MFF-L",
-        "priceCents": 14000,
-        "compareAtCents": 15800,
+        "priceCents": 17500,
+        "compareAtCents": 19750,
         "available": true
       }
     ],
@@ -1745,8 +1745,8 @@
         "id": 17101647315057,
         "title": null,
         "sku": "SK-M-HH-HB-J-MFF",
-        "priceCents": 17000,
-        "compareAtCents": 19000,
+        "priceCents": 21250,
+        "compareAtCents": 23750,
         "available": true
       }
     ],
@@ -1776,8 +1776,8 @@
         "id": 17101645480049,
         "title": null,
         "sku": "SK-M-HH-HB-LAV-MFF",
-        "priceCents": 17000,
-        "compareAtCents": 19000,
+        "priceCents": 21250,
+        "compareAtCents": 23750,
         "available": true
       }
     ],
@@ -1803,8 +1803,8 @@
         "id": 17101644071025,
         "title": null,
         "sku": "SK-M-HH-HB-E-MFF",
-        "priceCents": 17000,
-        "compareAtCents": 19000,
+        "priceCents": 21250,
+        "compareAtCents": 23750,
         "available": true
       }
     ],
@@ -1830,8 +1830,8 @@
         "id": 17101641416817,
         "title": null,
         "sku": "SK-M-HH-HB-M-MFF",
-        "priceCents": 17000,
-        "compareAtCents": 19000,
+        "priceCents": 21250,
+        "compareAtCents": 23750,
         "available": true
       }
     ],
@@ -1857,8 +1857,8 @@
         "id": 17101636305009,
         "title": null,
         "sku": "SK-L-HH-HB-LAV-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -1884,8 +1884,8 @@
         "id": 17101633454193,
         "title": null,
         "sku": "SK-L-HH-HB-L-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -1911,8 +1911,8 @@
         "id": 17101631848561,
         "title": null,
         "sku": "SK-L-HH-HB-J-MFF",
-        "priceCents": 17500,
-        "compareAtCents": 20000,
+        "priceCents": 21875,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -1939,8 +1939,8 @@
         "id": 17101630931057,
         "title": null,
         "sku": "SK-L-HH-HB-M-MFF",
-        "priceCents": 18000,
-        "compareAtCents": 20000,
+        "priceCents": 22500,
+        "compareAtCents": 25000,
         "available": true
       }
     ],
@@ -1970,7 +1970,7 @@
         "id": 17101630570609,
         "title": null,
         "sku": "AS-VITA-HH-J",
-        "priceCents": 4299,
+        "priceCents": 5374,
         "compareAtCents": 0,
         "available": true
       }
@@ -1996,7 +1996,7 @@
         "id": 20723583451249,
         "title": "Large",
         "sku": "AS-SC-O-Ring-2",
-        "priceCents": 599,
+        "priceCents": 749,
         "compareAtCents": 0,
         "available": true
       },
@@ -2004,7 +2004,7 @@
         "id": 17101628637297,
         "title": "Medium",
         "sku": "AS-SC-O-Ring-1",
-        "priceCents": 599,
+        "priceCents": 749,
         "compareAtCents": 0,
         "available": true
       },
@@ -2012,7 +2012,7 @@
         "id": 20723583484017,
         "title": "Prestige",
         "sku": "AS-SC-O-Ring-3",
-        "priceCents": 599,
+        "priceCents": 749,
         "compareAtCents": 0,
         "available": true
       }
@@ -2039,7 +2039,7 @@
         "id": 17101626605681,
         "title": null,
         "sku": "AS-FCV",
-        "priceCents": 2599,
+        "priceCents": 3249,
         "compareAtCents": 0,
         "available": true
       }
@@ -2067,7 +2067,7 @@
         "id": 17101618315377,
         "title": null,
         "sku": "AS-VITA-HH-N",
-        "priceCents": 3699,
+        "priceCents": 4624,
         "compareAtCents": 0,
         "available": true
       }
@@ -2094,7 +2094,7 @@
         "id": 17101615595633,
         "title": null,
         "sku": "AS-VITA-WM-N",
-        "priceCents": 2899,
+        "priceCents": 3624,
         "compareAtCents": 0,
         "available": true
       }
@@ -2124,7 +2124,7 @@
         "id": 17101615300721,
         "title": null,
         "sku": "AS-VITA-WM-LAV",
-        "priceCents": 3099,
+        "priceCents": 3874,
         "compareAtCents": 0,
         "available": true
       }
@@ -2151,7 +2151,7 @@
         "id": 17101613695089,
         "title": null,
         "sku": "AS-L-HH-Shell",
-        "priceCents": 2999,
+        "priceCents": 3749,
         "compareAtCents": 0,
         "available": true
       }
@@ -2177,7 +2177,7 @@
         "id": 17101613301873,
         "title": null,
         "sku": "AS-M-HH-Shell",
-        "priceCents": 1999,
+        "priceCents": 2499,
         "compareAtCents": 0,
         "available": true
       }
@@ -2203,7 +2203,7 @@
         "id": 20723576602737,
         "title": "Large",
         "sku": "AS-MB-2",
-        "priceCents": 1699,
+        "priceCents": 2124,
         "compareAtCents": 0,
         "available": false
       },
@@ -2211,7 +2211,7 @@
         "id": 17101612974193,
         "title": "Medium",
         "sku": "AS-MB-1",
-        "priceCents": 1699,
+        "priceCents": 2124,
         "compareAtCents": 0,
         "available": true
       },
@@ -2219,7 +2219,7 @@
         "id": 20723576635505,
         "title": "Prestige",
         "sku": "AS-MB-3",
-        "priceCents": 1699,
+        "priceCents": 2124,
         "compareAtCents": 0,
         "available": true
       }
@@ -2245,7 +2245,7 @@
         "id": 20723590168689,
         "title": "Large",
         "sku": "AS-C-2",
-        "priceCents": 1199,
+        "priceCents": 1499,
         "compareAtCents": 0,
         "available": true
       },
@@ -2253,7 +2253,7 @@
         "id": 17101610647665,
         "title": "Medium",
         "sku": "AS-C-1",
-        "priceCents": 1199,
+        "priceCents": 1499,
         "compareAtCents": 0,
         "available": true
       }
@@ -2279,7 +2279,7 @@
         "id": 20723587940465,
         "title": "Large",
         "sku": "AS-SP-2",
-        "priceCents": 1199,
+        "priceCents": 1499,
         "compareAtCents": 0,
         "available": true
       },
@@ -2287,7 +2287,7 @@
         "id": 17101608976497,
         "title": "Medium",
         "sku": "AS-SP-1",
-        "priceCents": 1199,
+        "priceCents": 1499,
         "compareAtCents": 0,
         "available": true
       }
@@ -2314,7 +2314,7 @@
         "id": 17101605666929,
         "title": null,
         "sku": "AS-WM-Shell",
-        "priceCents": 3499,
+        "priceCents": 4374,
         "compareAtCents": 0,
         "available": true
       }
@@ -2345,7 +2345,7 @@
         "id": 17101603995761,
         "title": null,
         "sku": "AS-VITA-HH-Mango",
-        "priceCents": 4299,
+        "priceCents": 5374,
         "compareAtCents": 0,
         "available": true
       }
@@ -2373,7 +2373,7 @@
         "id": 17101599637617,
         "title": null,
         "sku": "AS-HB",
-        "priceCents": 3999,
+        "priceCents": 4999,
         "compareAtCents": 0,
         "available": true
       }
@@ -2403,7 +2403,7 @@
         "id": 17101597671537,
         "title": null,
         "sku": "AS-VITA-WM-J",
-        "priceCents": 3099,
+        "priceCents": 3874,
         "compareAtCents": 0,
         "available": true
       }
@@ -2433,7 +2433,7 @@
         "id": 17101593510001,
         "title": null,
         "sku": "AS-VITA-WM-E",
-        "priceCents": 3099,
+        "priceCents": 3874,
         "compareAtCents": 0,
         "available": true
       }
@@ -2463,7 +2463,7 @@
         "id": 17101593084017,
         "title": null,
         "sku": "AS-VITA-WM-L",
-        "priceCents": 3099,
+        "priceCents": 3874,
         "compareAtCents": 0,
         "available": true
       }
@@ -2494,7 +2494,7 @@
         "id": 17101590003825,
         "title": null,
         "sku": "AS-VITA-HH-LAV",
-        "priceCents": 4299,
+        "priceCents": 5374,
         "compareAtCents": 0,
         "available": true
       }
@@ -2525,7 +2525,7 @@
         "id": 17101585514609,
         "title": null,
         "sku": "AS-VITA-HH-E",
-        "priceCents": 4299,
+        "priceCents": 5374,
         "compareAtCents": 0,
         "available": true
       }
@@ -2556,7 +2556,7 @@
         "id": 17101582762097,
         "title": null,
         "sku": "AS-VITA-HH-L",
-        "priceCents": 4299,
+        "priceCents": 5374,
         "compareAtCents": 0,
         "available": true
       }
@@ -2594,7 +2594,7 @@
         "id": 17101582205041,
         "title": null,
         "sku": "AS-WM",
-        "priceCents": 11500,
+        "priceCents": 14375,
         "compareAtCents": 0,
         "available": true
       }
@@ -2629,7 +2629,7 @@
         "id": 17101580763249,
         "title": null,
         "sku": "AS-L-HH",
-        "priceCents": 10500,
+        "priceCents": 13125,
         "compareAtCents": 0,
         "available": true
       }
@@ -2665,7 +2665,7 @@
         "id": 17101579616369,
         "title": null,
         "sku": "AS-M-HH",
-        "priceCents": 9500,
+        "priceCents": 11875,
         "compareAtCents": 0,
         "available": true
       }
