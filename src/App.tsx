@@ -28,6 +28,7 @@ import { NotFound } from '@/pages/NotFound'
 import { AdminLogin } from '@/pages/admin/AdminLogin'
 import { AdminDashboard } from '@/pages/admin/AdminDashboard'
 import { AccountAuth } from '@/pages/account/AccountAuth'
+import { ForgotPassword, ResetPassword } from '@/pages/account/PasswordReset'
 import { AccountLayout } from '@/pages/account/AccountLayout'
 import { AccountOverview } from '@/pages/account/AccountOverview'
 import { AccountOrders } from '@/pages/account/AccountOrders'
@@ -71,6 +72,8 @@ export default function App() {
               <Route path="/pages/:slug" element={<CmsPage />} />
 
               <Route path="/account/login" element={<AccountAuth mode="login" />} />
+              <Route path="/account/forgot" element={<ForgotPassword />} />
+              <Route path="/account/reset" element={<ResetPassword />} />
               <Route path="/account/register" element={<AccountAuth mode="register" />} />
               <Route path="/account" element={<AccountLayout />}>
                 <Route index element={<AccountOverview />} />

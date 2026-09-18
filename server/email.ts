@@ -97,3 +97,58 @@ export async function sendContactAlert(c: { name: string; email: string; message
     ),
   })
 }
+
+const button = (href: string, label: string) =>
+  `<p style="margin:24px 0"><a href="${esc(href)}" style="background:#c9a44c;color:#111;text-decoration:none;padding:12px 24px;border-radius:999px;font-family:Arial,sans-serif;font-weight:bold;display:inline-block">${esc(label)}</a></p>`
+
+export async function sendShippingEmail(o: {
+  reference: string
+  email: string
+  name: string | null
+  trackingNumber: string | null
+  shippingAddress: string | null
+}) {
+  await send({
+    to: o.email,
+    replyTo: env.adminNotifyEmail,
+    subject: `Your Aroma Sense order ${o.reference} has shipped`,
+    html: wrap(
+      `<h2 style="margin:0 0 12px">Your order is on its way${o.name ? `, ${esc(o.name)}` : ''}!</h2>` +
+        `<p>Order <strong>${esc(o.reference)}</strong> has shipped.</p>` +
+        (o.trackingNumber ? `<p><strong>Tracking number:</strong> ${esc(o.trackingNumber)}</p>` : '') +
+        (o.shippingAddress
+          ? `<p><strong>Shipping to</strong><br>${esc(o.shippingAddress).replace(/\n/g, '<br>')}</p>`
+          : '') +
+        `<p style="color:#666;font-size:13px">Questions? Just reply to this email.</p>`,
+    ),
+  })
+}
+
+export async function sendPasswordResetEmail(to: string, link: string) {
+  await send({
+    to,
+    replyTo: env.adminNotifyEmail,
+    subject: 'Reset your Aroma Sense password',
+    html: wrap(
+      `<h2 style="margin:0 0 12px">Reset your password</h2>` +
+        `<p>We received a request to reset the password for your Aroma Sense account. This link is valid for 1 hour.</p>` +
+        button(link, 'Choose a new password') +
+        `<p style="color:#666;font-size:13px">If you didn't ask for this, you can ignore this email — your password won't change.</p>`,
+    ),
+  })
+}
+
+export async function sendWelcomeEmail(to: string, code: string, percentOff: number) {
+  await send({
+    to,
+    replyTo: env.adminNotifyEmail,
+    subject: `Welcome to Aroma Sense — here's ${percentOff}% off`,
+    html: wrap(
+      `<h2 style="margin:0 0 12px">Welcome to Aroma Sense</h2>` +
+        `<p>Thanks for joining. Use this code at checkout for <strong>${percentOff}% off</strong> your first order:</p>` +
+        `<p style="font-size:24px;letter-spacing:3px;font-weight:bold;margin:20px 0;color:#8a6d1f">${esc(code)}</p>` +
+        button(env.appUrl + '/shop', 'Start shopping') +
+        `<p style="color:#666;font-size:13px">You're receiving this because you signed up at vitamincshower.com.</p>`,
+    ),
+  })
+}

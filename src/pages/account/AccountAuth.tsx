@@ -81,6 +81,13 @@ export function AccountAuth({ mode }: { mode: 'login' | 'register' }) {
               <p className="mt-1 text-xs text-muted-foreground">At least 8 characters.</p>
             )}
           </div>
+          {mode === 'login' && (
+            <p className="text-right text-sm">
+              <Link to="/account/forgot" className="text-primary hover:underline">
+                Forgot password?
+              </Link>
+            </p>
+          )}
           {error && <p className="text-sm text-red-400">{error}</p>}
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? 'One moment…' : mode === 'register' ? 'Create account' : 'Sign in'}

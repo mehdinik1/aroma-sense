@@ -4,7 +4,7 @@ import { db, rawArticles, rawPages } from '../db.ts'
 import { getCollection, getProduct, listCollections, listProducts } from '../catalog.ts'
 import { paymentsEnabled } from '../env.ts'
 import { loyalty, SUBSCRIBABLE_TYPES, WELCOME_DISCOUNT_CODE, WELCOME_DISCOUNT_PCT } from '../loyalty.ts'
-import { sendContactAlert } from '../email.ts'
+import { sendContactAlert, sendWelcomeEmail } from '../email.ts'
 
 export const publicRouter = Router()
 
@@ -103,10 +103,12 @@ publicRouter.post('/newsletter', async (req, res) => {
     res.status(400).json({ error: 'Enter a valid email address.' })
     return
   }
-  await db
+  const email = parsed.data.email.toLowerCase()
+  const inserted = await db
     .prepare('INSERT INTO newsletter_subscribers (email) VALUES (?) ON CONFLICT(email) DO NOTHING')
-    .bind(parsed.data.email.toLowerCase())
+    .bind(email)
     .run()
+  if (inserted.meta.changes > 0) await sendWelcomeEmail(email, WELCOME_DISCOUNT_CODE, WELCOME_DISCOUNT_PCT)
   res.json({ ok: true, code: WELCOME_DISCOUNT_CODE, percentOff: WELCOME_DISCOUNT_PCT })
 })
 

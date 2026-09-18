@@ -5,6 +5,7 @@ import { db } from '../db.ts'
 import { getProduct, listProducts } from '../catalog.ts'
 import { clearSession, currentAdmin, issueSession, requireAdmin } from '../auth.ts'
 import type { OrderItem } from '../../src/lib/types.ts'
+import { sendShippingEmail } from '../email.ts'
 
 export const adminRouter = Router()
 
@@ -152,7 +153,10 @@ adminRouter.patch('/orders/:id', async (req, res) => {
     return
   }
   const id = Number(req.params.id)
-  const row = await db.prepare('SELECT id FROM orders WHERE id = ?').bind(id).first()
+  const row = await db
+    .prepare('SELECT id, status, tracking_number FROM orders WHERE id = ?')
+    .bind(id)
+    .first<{ id: number; status: string; tracking_number: string | null }>()
   if (!row) {
     res.status(404).json({ error: 'Order not found.' })
     return
@@ -161,6 +165,19 @@ adminRouter.patch('/orders/:id', async (req, res) => {
   if (status) await db.prepare('UPDATE orders SET status = ? WHERE id = ?').bind(status, id).run()
   if (trackingNumber !== undefined) await db.prepare('UPDATE orders SET tracking_number = ? WHERE id = ?').bind(trackingNumber || null, id).run()
   const updated = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first<Record<string, unknown>>()
+
+  const becameFulfilled = updated!.status === 'fulfilled' && row.status !== 'fulfilled'
+  const trackingAdded =
+    updated!.status === 'fulfilled' && !!updated!.tracking_number && updated!.tracking_number !== row.tracking_number
+  if ((becameFulfilled || trackingAdded) && updated!.email) {
+    await sendShippingEmail({
+      reference: updated!.reference as string,
+      email: updated!.email as string,
+      name: (updated!.customer_name as string | null) ?? null,
+      trackingNumber: (updated!.tracking_number as string | null) ?? null,
+      shippingAddress: (updated!.shipping_address as string | null) ?? null,
+    })
+  }
   res.json(await hydrateOrder(updated!))
 })
 

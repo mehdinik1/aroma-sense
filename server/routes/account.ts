@@ -13,6 +13,7 @@ import {
 import { loyalty, pointsForSpend } from '../loyalty.ts'
 import { stripe } from '../stripe.ts'
 import { env } from '../env.ts'
+import { sendPasswordResetEmail } from '../email.ts'
 import type { OrderItem } from '../../src/lib/types.ts'
 
 export const accountRouter = Router()
@@ -65,6 +66,60 @@ accountRouter.post('/login', async (req, res) => {
   }
   issueCustomerSession(res, row.id)
   res.json({ customer: publicCustomer(row) })
+})
+
+async function sha256Hex(text: string) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+// Always answers the same way so it can't be used to discover which emails have accounts.
+accountRouter.post('/forgot', async (req, res) => {
+  const parsed = z.object({ email: z.string().trim().email() }).safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Enter a valid email address.' })
+    return
+  }
+  const email = parsed.data.email.toLowerCase()
+  const customer = await db.prepare('SELECT id FROM customers WHERE email = ?').bind(email).first<{ id: number }>()
+  if (customer) {
+    const recent = await db
+      .prepare("SELECT id FROM password_resets WHERE customer_id = ? AND created_at > datetime('now', '-1 minute')")
+      .bind(customer.id)
+      .first()
+    if (!recent) {
+      const token = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('')
+      await db
+        .prepare("INSERT INTO password_resets (customer_id, token_hash, expires_at) VALUES (?, ?, datetime('now', '+1 hour'))")
+        .bind(customer.id, await sha256Hex(token))
+        .run()
+      await sendPasswordResetEmail(email, `${env.appUrl}/account/reset?token=${token}`)
+    }
+  }
+  res.json({ ok: true })
+})
+
+accountRouter.post('/reset', async (req, res) => {
+  const parsed = z
+    .object({ token: z.string().length(64), password: z.string().min(8).max(200) })
+    .safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Use a password of at least 8 characters.' })
+    return
+  }
+  const row = await db
+    .prepare("SELECT customer_id FROM password_resets WHERE token_hash = ? AND expires_at > datetime('now')")
+    .bind(await sha256Hex(parsed.data.token))
+    .first<{ customer_id: number }>()
+  if (!row) {
+    res.status(400).json({ error: 'This reset link is invalid or has expired. Please request a new one.' })
+    return
+  }
+  await db.batch([
+    db.prepare('UPDATE customers SET password_hash = ? WHERE id = ?').bind(bcrypt.hashSync(parsed.data.password, 10), row.customer_id),
+    db.prepare('DELETE FROM password_resets WHERE customer_id = ?').bind(row.customer_id),
+  ])
+  res.json({ ok: true })
 })
 
 accountRouter.post('/logout', (_req, res) => {

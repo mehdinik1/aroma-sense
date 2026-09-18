@@ -91,6 +91,10 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }),
     logout: () => req<{ ok: true }>('/account/logout', { method: 'POST' }),
+    forgotPassword: (email: string) =>
+      req<{ ok: true }>('/account/forgot', { method: 'POST', body: JSON.stringify({ email }) }),
+    resetPassword: (token: string, password: string) =>
+      req<{ ok: true }>('/account/reset', { method: 'POST', body: JSON.stringify({ token, password }) }),
     updateProfile: (body: { name?: string; email?: string; currentPassword?: string; newPassword?: string }) =>
       req<{ customer: Customer }>('/account/me', { method: 'PATCH', body: JSON.stringify(body) }),
     wishlist: () => req<{ handles: string[] }>('/account/wishlist'),
