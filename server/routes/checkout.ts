@@ -36,7 +36,7 @@ checkoutRouter.post('/checkout', async (req, res) => {
     return
   }
 
-  const customer = currentCustomer(req)
+  const customer = await currentCustomer(req)
 
   // Recompute every line from the server catalog — never trust client prices.
   const lineItems: {
@@ -52,7 +52,7 @@ checkoutRouter.post('/checkout', async (req, res) => {
   }[] = []
 
   for (const item of parsed.data.items) {
-    const found = getVariant(item.variantId)
+    const found = await getVariant(item.variantId)
     if (!found || !found.product.visible) {
       res.status(400).json({ error: 'One of the items in your cart is no longer available.' })
       return
@@ -113,9 +113,10 @@ checkoutRouter.post('/checkout', async (req, res) => {
   let appliedCode: string | null = null
   if (parsed.data.discountCode && !isSubscription) {
     const code = parsed.data.discountCode.trim().toUpperCase()
-    const row = db.prepare('SELECT * FROM discount_codes WHERE code = ?').get(code) as
-      | { code: string; percent_off: number; active: number; max_redemptions: number | null; redeemed_count: number }
-      | undefined
+    const row = await db
+      .prepare('SELECT * FROM discount_codes WHERE code = ?')
+      .bind(code)
+      .first<{ code: string; percent_off: number; active: number; max_redemptions: number | null; redeemed_count: number }>()
     if (!row || !row.active || (row.max_redemptions != null && row.redeemed_count >= row.max_redemptions)) {
       res.status(400).json({ error: 'That discount code is not valid.' })
       return
@@ -154,7 +155,7 @@ checkoutRouter.post('/checkout', async (req, res) => {
         name: customer.name ?? undefined,
       })
       stripeCustomerId = created.id
-      db.prepare('UPDATE customers SET stripe_customer_id = ? WHERE id = ?').run(stripeCustomerId, customer.id)
+      await db.prepare('UPDATE customers SET stripe_customer_id = ? WHERE id = ?').bind(stripeCustomerId, customer.id).run()
     }
 
     const shippingOptions: Stripe.Checkout.SessionCreateParams.ShippingOption[] = [
@@ -240,14 +241,14 @@ checkoutRouter.post('/checkout', async (req, res) => {
 
     const session = await stripeClient.checkout.sessions.create(params)
 
-    const orderId = db
+    const orderInsert = await db
       .prepare(
         `INSERT INTO orders
            (reference, status, subtotal_cents, shipping_cents, discount_cents, total_cents,
             stripe_session_id, customer_id, points_redeemed, is_subscription, discount_code)
          VALUES (?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(
+      .bind(
         reference,
         subtotalCents,
         discountCents,
@@ -257,23 +258,28 @@ checkoutRouter.post('/checkout', async (req, res) => {
         pointsRedeemed,
         isSubscription ? 1 : 0,
         appliedCode,
-      ).lastInsertRowid
+      )
+      .run()
+    const orderId = orderInsert.meta.last_row_id
 
+    // order items + the points hold (if any) — grouped into one atomic batch
     const insertItem = db.prepare(
       `INSERT INTO order_items (order_id, product_handle, variant_id, title, variant_title, price_cents, quantity, image)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    for (const l of lineItems) {
-      insertItem.run(orderId, l.handle, l.variantId, l.title, l.variantTitle, l.priceCents, l.quantity, l.image)
-    }
-
+    const batch = lineItems.map((l) =>
+      insertItem.bind(orderId, l.handle, l.variantId, l.title, l.variantTitle, l.priceCents, l.quantity, l.image),
+    )
     // hold the redeemed points immediately so they can't be double-spent
     if (pointsRedeemed > 0 && customer) {
-      db.prepare('UPDATE customers SET points = points - ? WHERE id = ?').run(pointsRedeemed, customer.id)
-      db.prepare(
-        'INSERT INTO points_ledger (customer_id, delta, reason, order_reference) VALUES (?, ?, ?, ?)',
-      ).run(customer.id, -pointsRedeemed, 'Redeemed at checkout', reference)
+      batch.push(
+        db.prepare('UPDATE customers SET points = points - ? WHERE id = ?').bind(pointsRedeemed, customer.id),
+        db
+          .prepare('INSERT INTO points_ledger (customer_id, delta, reason, order_reference) VALUES (?, ?, ?, ?)')
+          .bind(customer.id, -pointsRedeemed, 'Redeemed at checkout', reference),
+      )
     }
+    await db.batch(batch)
 
     res.json({ url: session.url })
   } catch (err) {

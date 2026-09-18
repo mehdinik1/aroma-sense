@@ -3,21 +3,18 @@ import jwt from 'jsonwebtoken'
 import { env } from './env.ts'
 
 const COOKIE = 'as_admin'
+const COOKIE_OPTS = { httpOnly: true as const, sameSite: 'none' as const, secure: true }
 
 export function issueSession(res: Response, email: string) {
   const token = jwt.sign({ email }, env.jwtSecret, { expiresIn: '7d' })
-  res.cookie(COOKIE, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: env.isProd,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  })
+  res.cookie(COOKIE, token, { ...COOKIE_OPTS, maxAge: 7 * 24 * 60 * 60 * 1000 })
 }
 
 export function clearSession(res: Response) {
-  res.clearCookie(COOKIE)
+  res.clearCookie(COOKIE, COOKIE_OPTS)
 }
 
+// Stays sync (pure JWT decode, no DB) — unlike requireCustomer, admin auth never needs D1.
 export function currentAdmin(req: Request): string | null {
   const token = req.cookies?.[COOKIE]
   if (!token) return null

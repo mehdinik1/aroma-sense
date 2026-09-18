@@ -1,0 +1,18 @@
+# Separate config for the frontend static deploy — kept apart from wrangler.toml (the API
+# Worker's config) so `wrangler deploy -c wrangler.pages.toml` never picks up `main` /
+# server/worker.ts. Deploy with: npm run deploy:pages
+
+name = "aroma-sense"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+
+[[routes]]
+pattern = "vitamincshower.com"
+custom_domain = true
+
+[[routes]]
+pattern = "www.vitamincshower.com"
+custom_domain = true

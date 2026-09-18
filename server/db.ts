@@ -1,160 +1,19 @@
-import { DatabaseSync } from 'node:sqlite'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
+import { env as workerEnv } from 'cloudflare:workers'
 import bcrypt from 'bcryptjs'
 import { env } from './env.ts'
 import { WELCOME_DISCOUNT_CODE, WELCOME_DISCOUNT_PCT } from './loyalty.ts'
+import catalogJson from './data/catalog.json' with { type: 'json' }
+import collectionsJson from './data/collections.json' with { type: 'json' }
+import pagesJson from './data/pages.json' with { type: 'json' }
+import blogJson from './data/blog.json' with { type: 'json' }
 
-const DATA_DIR = path.resolve(import.meta.dirname, 'data')
-const DB_PATH = process.env.DB_PATH || path.resolve(import.meta.dirname, 'data.db')
-
-export const db = new DatabaseSync(DB_PATH)
-db.exec('PRAGMA journal_mode = WAL')
-db.exec('PRAGMA foreign_keys = ON')
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS meta (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS admin_users (
-    email TEXT PRIMARY KEY,
-    password_hash TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS product_overrides (
-    handle TEXT PRIMARY KEY,
-    price_cents INTEGER,
-    compare_at_cents INTEGER,
-    stock INTEGER NOT NULL DEFAULT 25,
-    visible INTEGER NOT NULL DEFAULT 1,
-    featured INTEGER NOT NULL DEFAULT 0
-  );
-
-  CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    reference TEXT NOT NULL UNIQUE,
-    status TEXT NOT NULL DEFAULT 'pending',
-    email TEXT,
-    customer_name TEXT,
-    shipping_address TEXT,
-    subtotal_cents INTEGER NOT NULL,
-    shipping_cents INTEGER NOT NULL DEFAULT 0,
-    total_cents INTEGER NOT NULL,
-    tracking_number TEXT,
-    stripe_session_id TEXT UNIQUE,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS order_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    product_handle TEXT NOT NULL,
-    variant_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    variant_title TEXT,
-    price_cents INTEGER NOT NULL,
-    quantity INTEGER NOT NULL,
-    image TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS contact_messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    message TEXT NOT NULL,
-    handled INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS customers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    name TEXT,
-    points INTEGER NOT NULL DEFAULT 0,
-    stripe_customer_id TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS addresses (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    line1 TEXT NOT NULL,
-    line2 TEXT,
-    city TEXT NOT NULL,
-    state TEXT NOT NULL,
-    postal_code TEXT NOT NULL,
-    phone TEXT,
-    is_default INTEGER NOT NULL DEFAULT 0
-  );
-
-  CREATE TABLE IF NOT EXISTS points_ledger (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-    delta INTEGER NOT NULL,
-    reason TEXT NOT NULL,
-    order_reference TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS subscriptions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-    stripe_subscription_id TEXT UNIQUE,
-    status TEXT NOT NULL DEFAULT 'active',
-    product_handle TEXT NOT NULL,
-    variant_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    variant_title TEXT,
-    unit_price_cents INTEGER NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 1,
-    interval TEXT NOT NULL DEFAULT 'month',
-    current_period_end TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS wishlist_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-    product_handle TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(customer_id, product_handle)
-  );
-
-  CREATE TABLE IF NOT EXISTS discount_codes (
-    code TEXT PRIMARY KEY,
-    percent_off INTEGER NOT NULL,
-    active INTEGER NOT NULL DEFAULT 1,
-    max_redemptions INTEGER,
-    redeemed_count INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS newsletter_subscribers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT NOT NULL UNIQUE,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`)
-
-// --- lightweight migrations (add columns to pre-existing tables) ----------
-function addColumn(table: string, column: string, decl: string) {
-  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
-  if (!cols.some((c) => c.name === column)) {
-    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${decl}`)
-  }
-}
-addColumn('orders', 'customer_id', 'INTEGER')
-addColumn('orders', 'points_earned', 'INTEGER NOT NULL DEFAULT 0')
-addColumn('orders', 'points_redeemed', 'INTEGER NOT NULL DEFAULT 0')
-addColumn('orders', 'discount_cents', 'INTEGER NOT NULL DEFAULT 0')
-addColumn('orders', 'is_subscription', 'INTEGER NOT NULL DEFAULT 0')
-addColumn('orders', 'discount_code', 'TEXT')
+// D1 binding — see wrangler.toml `[[d1_databases]]`. Table schema lives in
+// migrations/0001_init.sql (`wrangler d1 migrations apply`), not created at runtime.
+export const db: D1Database = workerEnv.DB
 
 // ---- raw catalog (source of truth for product content) --------------------
+// Bundled at build time (Wrangler/esbuild resolves JSON imports) — Workers has no
+// filesystem to `readFileSync` from at request time.
 
 type RawVariant = {
   id: number
@@ -194,17 +53,9 @@ export type RawArticle = {
 }
 export type RawPage = { slug: string; title: string; bodyHtml: string; text: string }
 
-const readJson = <T>(file: string, fallback: T): T => {
-  try {
-    return JSON.parse(readFileSync(path.join(DATA_DIR, file), 'utf8')) as T
-  } catch {
-    return fallback
-  }
-}
-
-export const rawProducts = readJson<RawProduct[]>('catalog.json', [])
-export const rawCollections = readJson<RawCollection[]>('collections.json', [])
-export const rawPages = readJson<RawPage[]>('pages.json', [])
+export const rawProducts = catalogJson as unknown as RawProduct[]
+export const rawCollections = collectionsJson as unknown as RawCollection[]
+export const rawPages = pagesJson as unknown as RawPage[]
 
 // Blog bodies come straight from the old theme's <article> markup, which repeats the
 // title and a "Posted by … on …" byline that we already render in the page header.
@@ -219,14 +70,14 @@ function cleanArticleBody(html: string): string {
     .replace(/(\s*<\/div>)+\s*$/i, '')
     .trim()
 }
-export const rawArticles = readJson<RawArticle[]>('blog.json', []).map((a) => ({
+export const rawArticles = (blogJson as unknown as RawArticle[]).map((a) => ({
   ...a,
   bodyHtml: cleanArticleBody(a.bodyHtml),
 }))
 
 export const productByHandle = new Map(rawProducts.map((p) => [p.handle, p]))
 
-// ---- seed ---------------------------------------------------------------
+// ---- one-time seed (idempotent, memoized per isolate) ----------------------
 
 const FEATURED = new Set([
   'as-luxe',
@@ -235,54 +86,64 @@ const FEATURED = new Set([
   'large-handheld-vitamin-c-shower-head',
 ])
 
-function seed() {
-  const seededVersion = db.prepare('SELECT value FROM meta WHERE key = ?').get('seed_version') as
-    | { value: string }
-    | undefined
+let seeded: Promise<void> | null = null
 
+/** Call at the top of every request (cheap after the first call in this isolate). */
+export function ensureSeeded(): Promise<void> {
+  if (!seeded) seeded = doSeed()
+  return seeded
+}
+
+async function doSeed() {
   // (re)seed override rows — insert missing, never clobber admin edits
-  const insertOverride = db.prepare(`
-    INSERT INTO product_overrides (handle, stock, visible, featured)
-    VALUES (?, 25, 1, ?)
-    ON CONFLICT(handle) DO NOTHING
-  `)
-  for (const p of rawProducts) {
-    const featured =
-      FEATURED.has(p.handle) || (p.productType === 'Shower Heads' ? 1 : 0)
-    insertOverride.run(p.handle, featured ? 1 : 0)
-  }
+  const insertOverride = db.prepare(
+    `INSERT INTO product_overrides (handle, stock, visible, featured)
+     VALUES (?, 25, 1, ?)
+     ON CONFLICT(handle) DO NOTHING`,
+  )
+  await db.batch(
+    rawProducts.map((p) => {
+      const featured = FEATURED.has(p.handle) || p.productType === 'Shower Heads'
+      return insertOverride.bind(p.handle, featured ? 1 : 0)
+    }),
+  )
 
-  // admin user
-  const existing = db.prepare('SELECT email FROM admin_users WHERE email = ?').get(env.adminEmail)
-  if (!existing) {
-    db.prepare('INSERT INTO admin_users (email, password_hash) VALUES (?, ?)').run(
-      env.adminEmail,
-      bcrypt.hashSync(env.adminPassword, 10),
-    )
+  const existingAdmin = await db
+    .prepare('SELECT email FROM admin_users WHERE email = ?')
+    .bind(env.adminEmail)
+    .first()
+  if (!existingAdmin) {
+    await db
+      .prepare('INSERT INTO admin_users (email, password_hash) VALUES (?, ?)')
+      .bind(env.adminEmail, bcrypt.hashSync(env.adminPassword, 10))
+      .run()
     console.log(`[db] created admin user ${env.adminEmail}`)
   }
 
-  if (!seededVersion) {
-    db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('seed_version', '1')
+  const seedVersion = await db.prepare('SELECT value FROM meta WHERE key = ?').bind('seed_version').first()
+  if (!seedVersion) {
+    await db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').bind('seed_version', '1').run()
     console.log(`[db] seeded ${rawProducts.length} products, ${rawCollections.length} collections`)
   }
 
-  // one-time (tracked separately so it also backfills a pre-existing dev database): a real,
+  // one-time (tracked separately so it also backfills a pre-existing database): a real,
   // working first-order incentive for the newsletter signup. Safe to disable/delete from the
   // admin Discounts tab afterward — it will not be recreated.
-  const welcomeCodeSeeded = db.prepare('SELECT value FROM meta WHERE key = ?').get('welcome_code_seeded')
-  if (!welcomeCodeSeeded) {
-    db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('welcome_code_seeded', '1')
-    db.prepare(
-      'INSERT INTO discount_codes (code, percent_off) VALUES (?, ?) ON CONFLICT(code) DO NOTHING',
-    ).run(WELCOME_DISCOUNT_CODE, WELCOME_DISCOUNT_PCT)
+  const welcomeSeeded = await db
+    .prepare('SELECT value FROM meta WHERE key = ?')
+    .bind('welcome_code_seeded')
+    .first()
+  if (!welcomeSeeded) {
+    await db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').bind('welcome_code_seeded', '1').run()
+    await db
+      .prepare('INSERT INTO discount_codes (code, percent_off) VALUES (?, ?) ON CONFLICT(code) DO NOTHING')
+      .bind(WELCOME_DISCOUNT_CODE, WELCOME_DISCOUNT_PCT)
+      .run()
     console.log(`[db] seeded welcome discount code ${WELCOME_DISCOUNT_CODE}`)
   }
 }
 
-seed()
-
-// ---- helpers ----------------------------------------------------------
+// ---- product override helpers ----------------------------------------------
 
 export type Override = {
   handle: string
@@ -293,13 +154,15 @@ export type Override = {
   featured: number
 }
 
-export const getOverride = (handle: string) =>
-  db.prepare('SELECT * FROM product_overrides WHERE handle = ?').get(handle) as Override | undefined
+export async function getOverride(handle: string): Promise<Override | undefined> {
+  const row = await db.prepare('SELECT * FROM product_overrides WHERE handle = ?').bind(handle).first<Override>()
+  return row ?? undefined
+}
 
-export const allOverrides = () =>
-  new Map(
-    (db.prepare('SELECT * FROM product_overrides').all() as Override[]).map((o) => [o.handle, o]),
-  )
+export async function allOverrides(): Promise<Map<string, Override>> {
+  const { results } = await db.prepare('SELECT * FROM product_overrides').all<Override>()
+  return new Map(results.map((o) => [o.handle, o]))
+}
 
 export function newOrderReference() {
   const n = Math.floor(1000 + Math.random() * 9000)

@@ -10,40 +10,70 @@ only.** Checkout is Stripe-hosted, which gives **Apple Pay + Google Pay** automa
 ## Stack
 
 - **Frontend** — Vite + React 19 + TypeScript, Tailwind v3 (shadcn-style tokens in
-  `src/index.css`), React Router v7, lucide-react
-- **Backend** — Express + TypeScript, `node:sqlite` (built into Node 22+, no native build),
-  Stripe, JWT cookie auth, zod
-- One `npm run dev` runs both: web on **:5177**, API on **:8787** (Vite proxies `/api`).
+  `src/index.css`), React Router v7, lucide-react. Deploys to **Cloudflare Pages**.
+- **Backend** — Express + TypeScript, running on **Cloudflare Workers** (via
+  `nodejs_compat` + the `cloudflare:node` Node-compat adapter — the Express app itself is
+  unmodified), **Cloudflare D1** (managed SQLite) for the database, Stripe, JWT cookie auth,
+  zod.
+- Local dev: `npm run dev` runs both — web on **:5177** (Vite), API on **:8787**
+  (`wrangler dev`, which emulates Workers + D1 locally via Miniflare — no Cloudflare account
+  needed for this part).
+
+Pages (frontend) and the Worker (backend) are always different origins, even locally — see
+**Environment** below.
 
 ## Run locally
 
 ```bash
 cd aroma-sense
-npm install
-cp .env.example .env      # edit values (see below)
+npm install                                # also applies patches/ (see note below)
+cp .dev.vars.example .dev.vars             # edit values (see below)
+npm run db:migrate:local                   # create the local D1 schema (one-time)
 npm run dev
 ```
 
 Open http://localhost:5177 · Admin at http://localhost:5177/admin
 
-Other scripts: `npm run build` (typecheck + prod build), `npm run lint`,
-`npm run scrape` (re-pull catalog/blog from the live store).
+Other scripts: `npm run build` (typecheck + prod build), `npm run lint`, `npm run scrape`
+(re-pull catalog/blog from the live store), `npm run deploy:worker` / `npm run deploy:pages`
+(see **Launching**).
 
-## Environment (`.env`)
+> **Why `patches/`?** Express's own top-level code requires `body-parser`, which pulls in
+> an old `iconv-lite` that crashes at Worker startup under Cloudflare's current Node compat
+> (`require_streams(...) is not a function`) — a real, currently-unfixed gap, not something
+> in this app's own code. `patches/iconv-lite+0.4.24.patch` (applied automatically by
+> `npm install` via the `postinstall` script) neutralizes the two Node-only extensions
+> `iconv-lite` doesn't need for this app (streaming decode, Node primitive extensions);
+> everything here only ever handles UTF-8 JSON, so nothing is lost. This app also doesn't
+> call `express.json()`/`express.raw()` itself — see `server/bodyParser.ts` — but the patch
+> is still required because merely `import express from 'express'` triggers the crash.
 
-| var | notes |
-|---|---|
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | the admin login. Seeded into the DB on first run. To change the password later, delete `server/data.db` and restart, or update the `admin_users` row. |
-| `JWT_SECRET` | any long random string — signs the admin session cookie |
-| `API_PORT` | default `8787` |
-| `APP_URL` | `http://localhost:5177` locally — used for Stripe redirect URLs |
-| `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` | from Stripe → Developers → API keys. **Test mode** keys start with `sk_test_` / `pk_test_`. The site runs without them, but checkout stays disabled until `STRIPE_SECRET_KEY` is set. |
-| `STRIPE_WEBHOOK_SECRET` | printed by `stripe listen` (below) |
+## Environment
+
+Cloudflare has two separate mechanisms — don't mix them up:
+
+- **`wrangler.toml`** — non-secret config (`[vars]`), committed. `APP_URL` (your Pages
+  domain — used in Stripe redirect/webhook URLs) and `CORS_ORIGIN` (same value — the Worker
+  only accepts cross-origin requests+cookies from this origin) live here. Also the `[[d1_databases]]` binding.
+- **`.dev.vars`** (local) / `wrangler secret put <NAME>` (deployed) — secrets, never
+  committed. `JWT_SECRET`, `ADMIN_PASSWORD`, `STRIPE_SECRET_KEY`,
+  `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`.
+
+| var | where | notes |
+|---|---|---|
+| `APP_URL` | `wrangler.toml` `[vars]` | your Cloudflare Pages URL, e.g. `https://aroma-sense.pages.dev` |
+| `CORS_ORIGIN` | `wrangler.toml` `[vars]` | same as `APP_URL` — the Worker rejects cross-origin requests from anywhere else |
+| `ADMIN_EMAIL` | `wrangler.toml` `[vars]` | not secret, just the admin login's email |
+| `ADMIN_PASSWORD` | `.dev.vars` / secret | seeded into `admin_users` on first request after a fresh migration. Change it afterward from Admin → Settings instead of re-seeding. |
+| `JWT_SECRET` | `.dev.vars` / secret | any long random string — signs both the admin and customer session cookies |
+| `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` | `.dev.vars` / secret | from Stripe → Developers → API keys. **Test mode** keys start with `sk_test_` / `pk_test_`. The site runs without them, but checkout stays disabled until `STRIPE_SECRET_KEY` is set. |
+| `STRIPE_WEBHOOK_SECRET` | `.dev.vars` / secret | from a webhook endpoint pointed at `https://<your-worker>.workers.dev/api/webhooks/stripe` (or your custom domain) |
 
 ## Enabling checkout (Stripe)
 
 1. Create a free Stripe account, stay in **Test mode**.
-2. Put the test keys in `.env`, restart `npm run dev`.
+2. Put the test keys in `.dev.vars` (local) or `wrangler secret put STRIPE_SECRET_KEY` etc.
+   (deployed), restart.
 3. Forward webhooks so paid orders get marked paid:
    ```bash
    stripe listen --forward-to localhost:8787/api/webhooks/stripe
@@ -71,29 +101,39 @@ scripts/gen-art.mjs     Generates all editorial imagery as original branded SVG:
                         (FNV hash + seeded PRNG), champagne-gold on warm black,
                         three styles (water contours / ripples / luminous droplet).
                         `--purge` also deletes the old scraped public/blog/ dir.
+wrangler.toml           Cloudflare Worker config — [vars], the D1 binding, compat flags
+migrations/0001_init.sql  D1 schema (apply with `wrangler d1 migrations apply`)
+patches/                iconv-lite patch so Express boots under Workers (see "Run locally")
 server/
-  index.ts              Express app
-  db.ts                 node:sqlite schema + seed + loads server/data/*.json
+  index.ts              Express app (routes + middleware only — no app.listen here)
+  worker.ts             Cloudflare Workers entry point — bridges Workers' fetch events to
+                        the Express app via `cloudflare:node`'s httpServerHandler
+  bodyParser.ts         minimal JSON/raw-body middleware (avoids Express's own
+                        express.json()/raw(), which crash under Workers — see README note)
+  db.ts                 D1 binding + one-time seed (admin user, product overrides, welcome
+                        discount code) + loads server/data/*.json as static imports
   catalog.ts            merges scraped catalog with admin overrides -> API product shape
   loyalty.ts            Aroma Sense Rewards point rules (earn/redeem rates, sub discount)
   customerAuth.ts       customer session cookie (separate from admin)
   routes/
-    public.ts           /api/products, /collections, /blog, /pages, /contact, /config
+    public.ts           /api/products, /collections, /blog, /pages, /contact, /config,
+                        /discount/validate, /newsletter
     checkout.ts         POST /api/checkout -> Stripe Checkout (payment OR subscription),
-                        server-side pricing, points redemption, Stripe customer reuse
+                        server-side pricing, points redemption, discount codes, kit
+                        discount, Stripe customer reuse
     webhook.ts          /api/webhooks/stripe -> order paid, stock--, award points,
-                        upsert subscriptions
-    account.ts          register/login/me + orders, addresses, points ledger,
-                        subscriptions, Stripe billing-portal session
-    admin.ts            login/logout/me + /admin/stats, /orders, /products, /contact-messages
+                        redeem discount code, upsert subscriptions
+    account.ts          register/login/me + profile, wishlist, orders, addresses, points
+                        ledger, subscriptions, Stripe billing-portal session
+    admin.ts            login/logout/me/password + /admin/stats, /orders, /products,
+                        /customers (+ points adjust), /discount-codes,
+                        /newsletter-subscribers, /contact-messages
   data/
     catalog.json        products + variants (prices in cents, USD)
     collections.json    collection membership
     blog.json           140 articles (sanitized HTML bodies, no <img>; each
                         `image` points at /blog-art/<handle>.svg)
     pages.json          hand-written policy pages (shipping/returns/privacy/terms)
-  data.db               local SQLite (gitignored) — overrides, orders, customers,
-                        addresses, points_ledger, subscriptions, messages, admin user
 src/
   data/site.ts          nav, footer, brand strings, benefit copy  <- edit copy here
   data/lifestyle.ts     maps storefront art slots (hero, ritual, lookbook) to
@@ -158,11 +198,14 @@ everything to the cart or check out directly.
 
 ### What the admin can do
 
-- See revenue, order count, unread messages, low-stock list
+- See revenue, order count, newsletter signups, unread messages, low-stock list
 - View orders, set fulfillment status + tracking number
 - Edit any product's price, compare-at price, stock, **Featured** and **Visible** flags —
   changes show on the storefront immediately (stored as overrides; re-scraping keeps them)
-- Read contact-form messages, mark handled
+- Browse customers — orders, addresses, points ledger — and manually award/deduct points
+- Create, disable, and delete discount codes (percent-off, optional max redemptions)
+- Read contact-form messages and newsletter signups, mark messages handled
+- Change the admin password from Settings (no redeploy needed)
 
 ## Refreshing the catalog
 
@@ -189,61 +232,93 @@ node scripts/gen-art.mjs --purge  # also delete any leftover scraped public/blog
 
 ## Launching
 
-Two paths from here — pick one:
+Everything runs on Cloudflare: the frontend as a Workers **static-assets** deployment
+(`wrangler.pages.toml` — Cloudflare's Pages product now runs on this same mechanism under
+the hood, so `*.workers.dev` is the real URL you'll get even though it's still called
+"Pages" in the dashboard), the backend as a **Worker** (this Express app via
+`nodejs_compat`), **D1** for the database. No separate host, no CORS-across-two-providers
+juggling.
 
-- **Self-host this app as-is** (below). No rewrite: everything you've built — Stripe,
-  accounts, loyalty, wishlist, discount codes, admin — keeps working exactly as it does
-  locally. Recommended if you want to launch soon.
-- **Migrate to Lovable** (next section). A rewrite onto Supabase — worth it only if you want
-  Lovable's visual-editing workflow going forward; by now that means re-porting a lot of
-  custom server logic (Stripe checkout/subscriptions, loyalty, wishlist, discount codes).
+> **Gotcha worth knowing**: `wrangler pages deploy dist` (the command Cloudflare's own docs
+> lead with) silently ignores `dist/` and redeploys whatever `wrangler.toml`'s `main` field
+> points at instead, whenever a `wrangler.toml` for a Worker already exists in the same
+> directory (as ours does, for the API). That's why the frontend has its own separate
+> `wrangler.pages.toml` (an `[assets]`-only config, no `main`) and is deployed with
+> `wrangler deploy -c wrangler.pages.toml` instead — found by actually deploying and getting
+> a 404 serving our API's own 404 handler, not by reading the docs.
 
-### 1. Pick a host
+### 1. Create the D1 database (once)
 
-This is a normal Node/Express app with a **SQLite file** as its database
-(`server/data.db`) — it needs a host with a real, *persistent* disk, not a serverless
-platform (Vercel/Netlify functions won't keep the file between requests). Any of these work
-with no code changes:
+```bash
+npx wrangler login                      # opens a browser to authorize the CLI
+npx wrangler d1 create aroma-sense-db
+```
 
-- **Railway**, **Render**, or **Fly.io** — attach a small persistent volume, point `DB_PATH`
-  (below) at a path on it.
-- A plain **VPS** (DigitalOcean, Hetzner, etc.) — the disk is just always there.
+Copy the printed `database_id` into `wrangler.toml`'s `[[d1_databases]]` block (replacing
+`CHANGE-ME`). Then apply the schema to the real (not local) database:
 
-`npm run build` produces `dist/` (the frontend); `npm start` runs one Node process that
-serves the API **and** the built frontend together on one port — no separate static host or
-CORS setup needed.
+```bash
+npm run db:migrate:remote
+```
 
-### 2. Set production environment variables
+### 2. Set production secrets
 
-Create these on the host (not in a committed file — `.env` stays local/gitignored):
+```bash
+npx wrangler secret put JWT_SECRET          # a long random string — don't reuse the local one
+npx wrangler secret put ADMIN_PASSWORD      # don't reuse aromasense-dev
+npx wrangler secret put STRIPE_SECRET_KEY       # once tested in Stripe test mode
+npx wrangler secret put STRIPE_PUBLISHABLE_KEY
+npx wrangler secret put STRIPE_WEBHOOK_SECRET
+```
 
-| Variable | Set it to |
-| --- | --- |
-| `NODE_ENV` | `production` |
-| `PORT` | usually set automatically by the host — leave `API_PORT` **unset** so this is honored |
-| `APP_URL` | your real domain, e.g. `https://aromasense.com` (used in Stripe redirect/webhook URLs) |
-| `JWT_SECRET` | a long random string — **do not reuse** the local dev value |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | your real admin login — **do not reuse** `aromasense-dev` |
-| `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` | **live** keys (`sk_live_…` / `pk_live_…`) once you've tested in test mode |
-| `STRIPE_WEBHOOK_SECRET` | from a webhook endpoint pointed at `https://<your-domain>/api/webhooks/stripe` (Stripe Dashboard → Developers → Webhooks → Add endpoint) |
-| `DB_PATH` | a path on the host's persistent volume, e.g. `/data/aroma-sense.db` |
+And in `wrangler.toml`'s `[vars]` (committed, not secret): set `APP_URL` and `CORS_ORIGIN`
+to your real Cloudflare Pages URL (you'll get this in step 4 — come back and fix the
+`CHANGE-ME` placeholders, then redeploy the Worker).
 
-### 3. Pre-launch checklist
+### 3. Deploy the Worker (backend)
+
+```bash
+npm run deploy:worker
+```
+
+Note the `*.workers.dev` URL it prints (or attach a custom route/domain from the Cloudflare
+dashboard afterward).
+
+### 4. Deploy the frontend
+
+```bash
+npm run deploy:pages
+```
+
+This builds with `VITE_API_URL` already pointed at your Worker's URL (edit that env var
+inline in the `deploy:pages` script in `package.json` if your Worker's URL differs from the
+one currently baked in) and deploys via `wrangler.pages.toml` — see the gotcha above for why
+not the more obvious `wrangler pages deploy`. Note the printed URL — this is the
+`APP_URL`/`CORS_ORIGIN` value for step 2. Update `wrangler.toml`, `npm run deploy:worker`
+again.
+
+### 5. Stripe webhook
+
+Stripe Dashboard → Developers → Webhooks → Add endpoint:
+`https://<your-worker>.workers.dev/api/webhooks/stripe`. Copy the signing secret into the
+`STRIPE_WEBHOOK_SECRET` secret (step 2), redeploy the Worker.
+
+### Pre-launch checklist
 
 - [ ] Test the full flow in Stripe **test mode** first (checkout, a Subscribe & Save order,
       the customer billing portal) before switching to live keys.
-- [ ] Change the admin password from the default (`Admin → Settings`, or the env var above).
+- [ ] Change the admin password from the default (Admin → Settings) if you didn't already
+      set a real one via `wrangler secret put`.
 - [ ] Replace the placeholder email/phone in [`src/data/site.ts`](src/data/site.ts) (`site.email`,
       `site.phone` — currently marked `TODO`).
 - [ ] Decide whether to keep or delete the seeded `WELCOME10` code (Admin → Discounts).
 - [ ] `npm run build && npm run lint` clean.
-- [ ] Point your domain's DNS at the host (host-specific — usually a CNAME/A record they give you).
+- [ ] Point your own domain at Pages/the Worker if you have one (Cloudflare dashboard —
+      Custom domains, on both the Pages project and the Worker).
 
-### 4. Back up the database
-
-`server/data.db` is now your source of truth for real orders, customers, and points once
-live — it's not something `npm run scrape` regenerates. Back it up on a schedule (most hosts
-with persistent volumes offer automatic snapshots; otherwise copy the file out periodically).
+D1 is Cloudflare's managed, durable SQLite — no separate backup step needed the way a
+self-hosted SQLite file would; Cloudflare handles that. `wrangler d1 export aroma-sense-db
+--remote --output backup.sql` is still worth running occasionally if you want your own copy.
 
 ## Updating, day to day
 
@@ -255,18 +330,26 @@ Most changes don't need a code deploy at all:
 - **Customers, manual point adjustments** → Admin → Customers
 - **Contact messages, newsletter signups** → Admin → Messages
 
-These take effect immediately, no restart or redeploy needed.
+These take effect immediately, no redeploy needed.
 
-**Code changes** (new pages, design tweaks, new features) follow the normal flow: edit
-locally, `npm run dev` to check it, then however you deploy (most hosts redeploy
-automatically on `git push` to the connected branch; some need a manual "redeploy" click).
-This repo has no git remote yet — `git init`, commit, and push to GitHub (or push directly to
-your host, e.g. `git push railway main`) whenever you're ready to wire that up.
+**Code changes** (new pages, design tweaks, new features) — edit locally, `npm run dev` to
+check it, then:
+- Frontend-only change → `npm run deploy:pages` (or just `git push` if Pages is connected to
+  the repo — it redeploys automatically).
+- Backend change (anything in `server/`) → `npm run deploy:worker`.
+
+This repo has no git remote yet — `git init`, commit, and push to GitHub whenever you want
+Pages' auto-deploy-on-push, or deploy straight from the CLI without GitHub at all.
+
+**Schema changes** (adding a column/table) — add a new file under `migrations/` (never edit
+`0001_init.sql` after it's been applied anywhere), then `npm run db:migrate:local` and
+`npm run db:migrate:remote`.
 
 **Catalog changes** (new products, changed descriptions on the live Shopify store) — re-run
-`npm run scrape`, review the diff in `server/data/*.json`, commit, redeploy. Admin overrides
-(price/stock/visible/featured edits you made in the admin panel) are preserved across a
-re-scrape.
+`npm run scrape`, review the diff in `server/data/*.json`, commit, `npm run deploy:worker`
+(the catalog is bundled into the Worker as static JSON, so it needs a redeploy — unlike D1
+data, which updates live). Admin overrides (price/stock/visible/featured edits you made in
+the admin panel) are preserved across a re-scrape.
 
 ## Moving to Lovable
 
@@ -277,8 +360,10 @@ Lovable uses the same frontend stack (Vite + React + TS + Tailwind + shadcn).
    to Lovable's agent.
 3. The backend rebuilds on **Supabase + Stripe edge functions**. The route contract in
    `server/routes/` maps 1:1:
-   - all SQLite tables (`product_overrides`, `orders`, `order_items`, `customers`,
-     `addresses`, `points_ledger`, `subscriptions`, `contact_messages`) → Supabase tables
+   - all D1 tables (`migrations/0001_init.sql`: `product_overrides`, `orders`,
+     `order_items`, `customers`, `addresses`, `points_ledger`, `subscriptions`,
+     `wishlist_items`, `discount_codes`, `newsletter_subscribers`, `contact_messages`) →
+     Supabase (Postgres) tables
    - `checkout.ts` / `webhook.ts` / `account.ts` billing-portal → Supabase edge functions
    - customer auth → Supabase Auth; admin auth → a Supabase role / separate table
    - `server/loyalty.ts` rules → a config row or edge-function constant

@@ -19,10 +19,15 @@ import type {
   Subscription,
 } from './types'
 
+// Pages (this frontend) and the Cloudflare Worker (the API) are always different origins —
+// set at build time via `VITE_API_URL` (e.g. https://aroma-sense-api.<you>.workers.dev/api).
+// Falls back to a relative path for local dev, where Vite proxies /api to `wrangler dev`.
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'same-origin',
+    credentials: 'include', // cross-site cookies — see server/auth.ts / customerAuth.ts
     ...init,
   })
   const text = await res.text()

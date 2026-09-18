@@ -4,6 +4,10 @@ import { db } from './db.ts'
 import { env } from './env.ts'
 
 const COOKIE = 'as_customer'
+// Pages (frontend) and this Worker (backend) are always different origins — see
+// server/env.ts's corsOrigin note. Modern browsers treat http://localhost as a secure
+// context, so this works during local `wrangler dev` too.
+const COOKIE_OPTS = { httpOnly: true as const, sameSite: 'none' as const, secure: true }
 
 export type CustomerRow = {
   id: number
@@ -17,31 +21,27 @@ export type CustomerRow = {
 
 export function issueCustomerSession(res: Response, id: number) {
   const token = jwt.sign({ cid: id }, env.jwtSecret, { expiresIn: '30d' })
-  res.cookie(COOKIE, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: env.isProd,
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  })
+  res.cookie(COOKIE, token, { ...COOKIE_OPTS, maxAge: 30 * 24 * 60 * 60 * 1000 })
 }
 
 export function clearCustomerSession(res: Response) {
-  res.clearCookie(COOKIE)
+  res.clearCookie(COOKIE, COOKIE_OPTS)
 }
 
-export function currentCustomer(req: Request): CustomerRow | null {
+export async function currentCustomer(req: Request): Promise<CustomerRow | null> {
   const token = req.cookies?.[COOKIE]
   if (!token) return null
   try {
     const { cid } = jwt.verify(token, env.jwtSecret) as { cid: number }
-    return (db.prepare('SELECT * FROM customers WHERE id = ?').get(cid) as CustomerRow) ?? null
+    const row = await db.prepare('SELECT * FROM customers WHERE id = ?').bind(cid).first<CustomerRow>()
+    return row ?? null
   } catch {
     return null
   }
 }
 
-export function requireCustomer(req: Request, res: Response, next: NextFunction) {
-  const customer = currentCustomer(req)
+export async function requireCustomer(req: Request, res: Response, next: NextFunction) {
+  const customer = await currentCustomer(req)
   if (!customer) {
     res.status(401).json({ error: 'Please sign in.', code: 'unauthenticated' })
     return

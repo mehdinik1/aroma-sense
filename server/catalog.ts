@@ -75,33 +75,40 @@ function applyOverride(p: RawProduct, o: Override | undefined): ApiProduct {
   }
 }
 
-export function listProducts({ includeHidden = false } = {}): ApiProduct[] {
-  const overrides = allOverrides()
+export async function listProducts({ includeHidden = false } = {}): Promise<ApiProduct[]> {
+  const overrides = await allOverrides()
   return rawProducts
     .map((p) => applyOverride(p, overrides.get(p.handle)))
     .filter((p) => includeHidden || p.visible)
 }
 
-export function getProduct(handle: string, { includeHidden = false } = {}): ApiProduct | null {
+export async function getProduct(
+  handle: string,
+  { includeHidden = false } = {},
+): Promise<ApiProduct | null> {
   const raw = productByHandle.get(handle)
   if (!raw) return null
-  const p = applyOverride(raw, getOverride(handle))
+  const p = applyOverride(raw, await getOverride(handle))
   if (!p.visible && !includeHidden) return null
   return p
 }
 
-export function getVariant(variantId: number): { product: ApiProduct; variant: ApiVariant } | null {
+export async function getVariant(
+  variantId: number,
+): Promise<{ product: ApiProduct; variant: ApiVariant } | null> {
+  // batch-fetch all overrides once rather than one D1 round trip per candidate product
+  const overrides = await allOverrides()
   for (const raw of rawProducts) {
     if (!raw.variants.some((v) => v.id === variantId)) continue
-    const product = applyOverride(raw, getOverride(raw.handle))
+    const product = applyOverride(raw, overrides.get(raw.handle))
     const variant = product.variants.find((v) => v.id === variantId)
     if (variant) return { product, variant }
   }
   return null
 }
 
-export function listCollections() {
-  const visible = new Set(listProducts().map((p) => p.handle))
+export async function listCollections() {
+  const visible = new Set((await listProducts()).map((p) => p.handle))
   return rawCollections
     .map((c) => ({
       handle: c.handle,
@@ -112,10 +119,10 @@ export function listCollections() {
     .filter((c) => c.productHandles.length > 0)
 }
 
-export function getCollection(handle: string) {
+export async function getCollection(handle: string) {
   const c = rawCollections.find((x) => x.handle === handle)
   if (!c) return null
-  const products = listProducts().filter((p) => c.productHandles.includes(p.handle))
+  const products = (await listProducts()).filter((p) => c.productHandles.includes(p.handle))
   return {
     collection: { handle: c.handle, title: c.title, description: c.description, productHandles: products.map((p) => p.handle) },
     products,

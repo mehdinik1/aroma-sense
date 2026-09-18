@@ -1,0 +1,22 @@
+name = "aroma-sense-api"
+main = "server/worker.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Non-secret config. Secrets (JWT_SECRET, ADMIN_PASSWORD, STRIPE_*) are set with
+# `wrangler secret put <NAME>` instead — never put them here.
+[vars]
+APP_URL = "https://vitamincshower.com"
+ADMIN_EMAIL = "admin@aromasense.local"
+CORS_ORIGIN = "https://vitamincshower.com"
+
+# Created by `wrangler d1 create aroma-sense-db` — paste the printed database_id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "aroma-sense-db"
+database_id = "6961458c-a9e8-48d0-abd1-c69822d59479"
+migrations_dir = "migrations"
+
+[[routes]]
+pattern = "api.vitamincshower.com"
+custom_domain = true

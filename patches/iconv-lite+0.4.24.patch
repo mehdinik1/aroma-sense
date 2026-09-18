@@ -1,0 +1,19 @@
+diff --git a/node_modules/iconv-lite/lib/index.js b/node_modules/iconv-lite/lib/index.js
+index 5391919..e797bd9 100644
+--- a/node_modules/iconv-lite/lib/index.js
++++ b/node_modules/iconv-lite/lib/index.js
+@@ -135,7 +135,13 @@ iconv.getDecoder = function getDecoder(encoding, options) {
+ 
+ 
+ // Load extensions in Node. All of them are omitted in Browserify build via 'browser' field in package.json.
+-var nodeVer = typeof process !== 'undefined' && process.versions && process.versions.node;
++// Patched for Cloudflare Workers (see patches/iconv-lite+0.4.24.patch): both of these pull
++// in Node `stream`/primitive APIs that workerd's nodejs_compat doesn't fully shim
++// ("require_streams(...)"/"require_extend_node(...) is not a function"), crashing the
++// Worker at startup even though nothing in this app uses non-UTF8 streaming decode.
++var nodeVer = typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers'
++    ? false
++    : typeof process !== 'undefined' && process.versions && process.versions.node;
+ if (nodeVer) {
+ 
+     // Load streaming support in Node v0.10+

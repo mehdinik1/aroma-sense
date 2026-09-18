@@ -23,32 +23,33 @@ const creds = z.object({
   name: z.string().trim().min(1).max(120).optional(),
 })
 
-accountRouter.post('/register', (req, res) => {
+accountRouter.post('/register', async (req, res) => {
   const parsed = creds.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Use a valid email and a password of at least 8 characters.' })
     return
   }
   const email = parsed.data.email.toLowerCase()
-  const exists = db.prepare('SELECT id FROM customers WHERE email = ?').get(email)
+  const exists = await db.prepare('SELECT id FROM customers WHERE email = ?').bind(email).first()
   if (exists) {
     res.status(409).json({ error: 'An account with that email already exists.' })
     return
   }
-  const id = db
+  const inserted = await db
     .prepare('INSERT INTO customers (email, password_hash, name) VALUES (?, ?, ?)')
-    .run(email, bcrypt.hashSync(parsed.data.password, 10), parsed.data.name ?? null)
-    .lastInsertRowid as number
+    .bind(email, bcrypt.hashSync(parsed.data.password, 10), parsed.data.name ?? null)
+    .run()
+  const id = inserted.meta.last_row_id
 
   // link any past guest orders with this email + award their points
-  linkGuestOrders(id, email)
+  await linkGuestOrders(id, email)
 
   issueCustomerSession(res, id)
-  const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(id) as CustomerRow
-  res.json({ customer: publicCustomer(customer) })
+  const customer = await db.prepare('SELECT * FROM customers WHERE id = ?').bind(id).first<CustomerRow>()
+  res.json({ customer: publicCustomer(customer!) })
 })
 
-accountRouter.post('/login', (req, res) => {
+accountRouter.post('/login', async (req, res) => {
   const parsed = z
     .object({ email: z.string().trim().email(), password: z.string().min(1) })
     .safeParse(req.body)
@@ -57,7 +58,7 @@ accountRouter.post('/login', (req, res) => {
     return
   }
   const email = parsed.data.email.toLowerCase()
-  const row = db.prepare('SELECT * FROM customers WHERE email = ?').get(email) as CustomerRow | undefined
+  const row = await db.prepare('SELECT * FROM customers WHERE email = ?').bind(email).first<CustomerRow>()
   if (!row || !bcrypt.compareSync(parsed.data.password, row.password_hash)) {
     res.status(401).json({ error: 'Incorrect email or password.' })
     return
@@ -71,8 +72,8 @@ accountRouter.post('/logout', (_req, res) => {
   res.json({ ok: true })
 })
 
-accountRouter.get('/me', (req, res) => {
-  const c = currentCustomer(req)
+accountRouter.get('/me', async (req, res) => {
+  const c = await currentCustomer(req)
   if (!c) {
     res.status(401).json({ error: 'Not signed in', code: 'unauthenticated' })
     return
@@ -91,10 +92,11 @@ accountRouter.get('/me', (req, res) => {
 
 // ---- orders --------------------------------------------------------------
 
-function hydrateOrder(row: Record<string, unknown>) {
-  const items = db
+async function hydrateOrder(row: Record<string, unknown>) {
+  const { results: items } = await db
     .prepare('SELECT * FROM order_items WHERE order_id = ?')
-    .all(row.id as number) as Record<string, unknown>[]
+    .bind(row.id as number)
+    .all<Record<string, unknown>>()
   return {
     reference: row.reference,
     status: row.status,
@@ -136,7 +138,7 @@ const profileSchema = z.object({
   newPassword: z.string().min(8).max(200).optional(),
 })
 
-accountRouter.patch('/me', (req, res) => {
+accountRouter.patch('/me', async (req, res) => {
   const c = reqCustomer(req)
   const parsed = profileSchema.safeParse(req.body)
   if (!parsed.success) {
@@ -150,93 +152,88 @@ accountRouter.patch('/me', (req, res) => {
       res.status(401).json({ error: 'Current password is incorrect.' })
       return
     }
-    db.prepare('UPDATE customers SET password_hash = ? WHERE id = ?').run(
-      bcrypt.hashSync(newPassword, 10),
-      c.id,
-    )
+    await db.prepare('UPDATE customers SET password_hash = ? WHERE id = ?').bind(bcrypt.hashSync(newPassword, 10), c.id).run()
   }
 
   if (email !== undefined) {
     const normalized = email.toLowerCase()
     if (normalized !== c.email) {
-      const exists = db.prepare('SELECT id FROM customers WHERE email = ? AND id != ?').get(normalized, c.id)
+      const exists = await db.prepare('SELECT id FROM customers WHERE email = ? AND id != ?').bind(normalized, c.id).first()
       if (exists) {
         res.status(409).json({ error: 'An account with that email already exists.' })
         return
       }
-      db.prepare('UPDATE customers SET email = ? WHERE id = ?').run(normalized, c.id)
+      await db.prepare('UPDATE customers SET email = ? WHERE id = ?').bind(normalized, c.id).run()
     }
   }
 
   if (name !== undefined) {
-    db.prepare('UPDATE customers SET name = ? WHERE id = ?').run(name || null, c.id)
+    await db.prepare('UPDATE customers SET name = ? WHERE id = ?').bind(name || null, c.id).run()
   }
 
-  const updated = db.prepare('SELECT * FROM customers WHERE id = ?').get(c.id) as CustomerRow
-  res.json({ customer: publicCustomer(updated) })
+  const updated = await db.prepare('SELECT * FROM customers WHERE id = ?').bind(c.id).first<CustomerRow>()
+  res.json({ customer: publicCustomer(updated!) })
 })
 
 // ---- wishlist ---------------------------------------------------------
 
-function listWishlist(customerId: number): string[] {
-  return (
-    db
-      .prepare('SELECT product_handle FROM wishlist_items WHERE customer_id = ? ORDER BY id DESC')
-      .all(customerId) as { product_handle: string }[]
-  ).map((r) => r.product_handle)
+async function listWishlist(customerId: number): Promise<string[]> {
+  const { results } = await db
+    .prepare('SELECT product_handle FROM wishlist_items WHERE customer_id = ? ORDER BY id DESC')
+    .bind(customerId)
+    .all<{ product_handle: string }>()
+  return results.map((r) => r.product_handle)
 }
 
-accountRouter.get('/wishlist', (req, res) => {
-  res.json({ handles: listWishlist(reqCustomer(req).id) })
+accountRouter.get('/wishlist', async (req, res) => {
+  res.json({ handles: await listWishlist(reqCustomer(req).id) })
 })
 
-accountRouter.post('/wishlist', (req, res) => {
+accountRouter.post('/wishlist', async (req, res) => {
   const parsed = z.object({ handle: z.string().trim().min(1).max(200) }).safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid product.' })
     return
   }
   const c = reqCustomer(req)
-  db.prepare(
-    'INSERT INTO wishlist_items (customer_id, product_handle) VALUES (?, ?) ON CONFLICT(customer_id, product_handle) DO NOTHING',
-  ).run(c.id, parsed.data.handle)
-  res.json({ handles: listWishlist(c.id) })
+  await db
+    .prepare('INSERT INTO wishlist_items (customer_id, product_handle) VALUES (?, ?) ON CONFLICT(customer_id, product_handle) DO NOTHING')
+    .bind(c.id, parsed.data.handle)
+    .run()
+  res.json({ handles: await listWishlist(c.id) })
 })
 
-accountRouter.delete('/wishlist/:handle', (req, res) => {
+accountRouter.delete('/wishlist/:handle', async (req, res) => {
   const c = reqCustomer(req)
-  db.prepare('DELETE FROM wishlist_items WHERE customer_id = ? AND product_handle = ?').run(
-    c.id,
-    req.params.handle,
-  )
-  res.json({ handles: listWishlist(c.id) })
+  await db.prepare('DELETE FROM wishlist_items WHERE customer_id = ? AND product_handle = ?').bind(c.id, req.params.handle).run()
+  res.json({ handles: await listWishlist(c.id) })
 })
 
-accountRouter.get('/orders', (req, res) => {
+accountRouter.get('/orders', async (req, res) => {
   const c = reqCustomer(req)
-  const rows = db
+  const { results: rows } = await db
     .prepare(
       `SELECT * FROM orders
        WHERE (customer_id = ? OR (email IS NOT NULL AND lower(email) = ?))
          AND status IN ('paid','fulfilled','cancelled')
        ORDER BY id DESC`,
     )
-    .all(c.id, c.email) as Record<string, unknown>[]
-  res.json(rows.map(hydrateOrder))
+    .bind(c.id, c.email)
+    .all<Record<string, unknown>>()
+  res.json(await Promise.all(rows.map(hydrateOrder)))
 })
 
-accountRouter.get('/orders/:reference', (req, res) => {
+accountRouter.get('/orders/:reference', async (req, res) => {
   const c = reqCustomer(req)
-  const row = db
-    .prepare(
-      `SELECT * FROM orders WHERE reference = ? AND (customer_id = ? OR lower(email) = ?)`,
-    )
-    .get(req.params.reference, c.id, c.email) as Record<string, unknown> | undefined
+  const row = await db
+    .prepare('SELECT * FROM orders WHERE reference = ? AND (customer_id = ? OR lower(email) = ?)')
+    .bind(req.params.reference, c.id, c.email)
+    .first<Record<string, unknown>>()
   if (!row) {
     res.status(404).json({ error: 'Order not found.' })
     return
   }
-  res.json(hydrateOrder(row))
+  res.json(await hydrateOrder(row))
 })
 
 // ---- addresses ----------------------------------------------------------
@@ -252,12 +249,12 @@ const addressSchema = z.object({
   isDefault: z.boolean().optional(),
 })
 
-function listAddresses(customerId: number) {
-  return (
-    db.prepare('SELECT * FROM addresses WHERE customer_id = ? ORDER BY is_default DESC, id DESC').all(
-      customerId,
-    ) as Record<string, unknown>[]
-  ).map((a) => ({
+async function listAddresses(customerId: number) {
+  const { results } = await db
+    .prepare('SELECT * FROM addresses WHERE customer_id = ? ORDER BY is_default DESC, id DESC')
+    .bind(customerId)
+    .all<Record<string, unknown>>()
+  return results.map((a) => ({
     id: a.id,
     name: a.name,
     line1: a.line1,
@@ -270,11 +267,11 @@ function listAddresses(customerId: number) {
   }))
 }
 
-accountRouter.get('/addresses', (req, res) => {
-  res.json(listAddresses(reqCustomer(req).id))
+accountRouter.get('/addresses', async (req, res) => {
+  res.json(await listAddresses(reqCustomer(req).id))
 })
 
-accountRouter.post('/addresses', (req, res) => {
+accountRouter.post('/addresses', async (req, res) => {
   const parsed = addressSchema.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Please complete all required address fields.' })
@@ -282,35 +279,35 @@ accountRouter.post('/addresses', (req, res) => {
   }
   const c = reqCustomer(req)
   const d = parsed.data
-  const count = (db.prepare('SELECT COUNT(*) AS n FROM addresses WHERE customer_id = ?').get(c.id) as { n: number }).n
-  const makeDefault = d.isDefault || count === 0
-  if (makeDefault) db.prepare('UPDATE addresses SET is_default = 0 WHERE customer_id = ?').run(c.id)
-  db.prepare(
-    `INSERT INTO addresses (customer_id, name, line1, line2, city, state, postal_code, phone, is_default)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(c.id, d.name, d.line1, d.line2 || null, d.city, d.state, d.postalCode, d.phone || null, makeDefault ? 1 : 0)
-  res.json(listAddresses(c.id))
+  const countRow = await db.prepare('SELECT COUNT(*) AS n FROM addresses WHERE customer_id = ?').bind(c.id).first<{ n: number }>()
+  const makeDefault = d.isDefault || countRow!.n === 0
+  if (makeDefault) await db.prepare('UPDATE addresses SET is_default = 0 WHERE customer_id = ?').bind(c.id).run()
+  await db
+    .prepare(
+      `INSERT INTO addresses (customer_id, name, line1, line2, city, state, postal_code, phone, is_default)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(c.id, d.name, d.line1, d.line2 || null, d.city, d.state, d.postalCode, d.phone || null, makeDefault ? 1 : 0)
+    .run()
+  res.json(await listAddresses(c.id))
 })
 
-accountRouter.patch('/addresses/:id', (req, res) => {
+accountRouter.patch('/addresses/:id', async (req, res) => {
   const parsed = addressSchema.partial().safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid values.' })
     return
   }
   const c = reqCustomer(req)
-  const owned = db.prepare('SELECT id FROM addresses WHERE id = ? AND customer_id = ?').get(
-    Number(req.params.id),
-    c.id,
-  )
+  const owned = await db.prepare('SELECT id FROM addresses WHERE id = ? AND customer_id = ?').bind(Number(req.params.id), c.id).first()
   if (!owned) {
     res.status(404).json({ error: 'Address not found.' })
     return
   }
   const d = parsed.data
   if (d.isDefault) {
-    db.prepare('UPDATE addresses SET is_default = 0 WHERE customer_id = ?').run(c.id)
-    db.prepare('UPDATE addresses SET is_default = 1 WHERE id = ?').run(Number(req.params.id))
+    await db.prepare('UPDATE addresses SET is_default = 0 WHERE customer_id = ?').bind(c.id).run()
+    await db.prepare('UPDATE addresses SET is_default = 1 WHERE id = ?').bind(Number(req.params.id)).run()
   }
   const map: Record<string, string> = {
     name: 'name', line1: 'line1', line2: 'line2', city: 'city', state: 'state',
@@ -318,31 +315,30 @@ accountRouter.patch('/addresses/:id', (req, res) => {
   }
   for (const [k, col] of Object.entries(map)) {
     if (k in d) {
-      db.prepare(`UPDATE addresses SET ${col} = ? WHERE id = ?`).run(
-        (d as Record<string, string>)[k] || null,
-        Number(req.params.id),
-      )
+      await db
+        .prepare(`UPDATE addresses SET ${col} = ? WHERE id = ?`)
+        .bind((d as Record<string, string>)[k] || null, Number(req.params.id))
+        .run()
     }
   }
-  res.json(listAddresses(c.id))
+  res.json(await listAddresses(c.id))
 })
 
-accountRouter.delete('/addresses/:id', (req, res) => {
+accountRouter.delete('/addresses/:id', async (req, res) => {
   const c = reqCustomer(req)
-  db.prepare('DELETE FROM addresses WHERE id = ? AND customer_id = ?').run(Number(req.params.id), c.id)
-  res.json(listAddresses(c.id))
+  await db.prepare('DELETE FROM addresses WHERE id = ? AND customer_id = ?').bind(Number(req.params.id), c.id).run()
+  res.json(await listAddresses(c.id))
 })
 
 // ---- points -----------------------------------------------------------
 
-accountRouter.get('/points', (req, res) => {
+accountRouter.get('/points', async (req, res) => {
   const c = reqCustomer(req)
-  const ledger = (
-    db.prepare('SELECT * FROM points_ledger WHERE customer_id = ? ORDER BY id DESC LIMIT 100').all(c.id) as Record<
-      string,
-      unknown
-    >[]
-  ).map((r) => ({
+  const { results } = await db
+    .prepare('SELECT * FROM points_ledger WHERE customer_id = ? ORDER BY id DESC LIMIT 100')
+    .bind(c.id)
+    .all<Record<string, unknown>>()
+  const ledger = results.map((r) => ({
     delta: r.delta,
     reason: r.reason,
     orderReference: r.order_reference,
@@ -362,25 +358,25 @@ accountRouter.get('/points', (req, res) => {
 
 // ---- subscriptions --------------------------------------------------
 
-accountRouter.get('/subscriptions', (req, res) => {
+accountRouter.get('/subscriptions', async (req, res) => {
   const c = reqCustomer(req)
-  const rows = (
-    db.prepare('SELECT * FROM subscriptions WHERE customer_id = ? ORDER BY id DESC').all(c.id) as Record<
-      string,
-      unknown
-    >[]
-  ).map((s) => ({
-    id: s.id,
-    status: s.status,
-    productHandle: s.product_handle,
-    title: s.title,
-    variantTitle: s.variant_title,
-    unitPriceCents: s.unit_price_cents,
-    quantity: s.quantity,
-    interval: s.interval,
-    currentPeriodEnd: s.current_period_end,
-  }))
-  res.json(rows)
+  const { results } = await db
+    .prepare('SELECT * FROM subscriptions WHERE customer_id = ? ORDER BY id DESC')
+    .bind(c.id)
+    .all<Record<string, unknown>>()
+  res.json(
+    results.map((s) => ({
+      id: s.id,
+      status: s.status,
+      productHandle: s.product_handle,
+      title: s.title,
+      variantTitle: s.variant_title,
+      unitPriceCents: s.unit_price_cents,
+      quantity: s.quantity,
+      interval: s.interval,
+      currentPeriodEnd: s.current_period_end,
+    })),
+  )
 })
 
 // ---- Stripe billing portal (saved cards, invoices, cancel subs) --------
@@ -399,7 +395,7 @@ accountRouter.post('/billing-portal', async (req, res) => {
   if (!customerId) {
     const created = await client.customers.create({ email: c.email, name: c.name ?? undefined })
     customerId = created.id
-    db.prepare('UPDATE customers SET stripe_customer_id = ? WHERE id = ?').run(customerId, c.id)
+    await db.prepare('UPDATE customers SET stripe_customer_id = ? WHERE id = ?').bind(customerId, c.id).run()
   }
   try {
     const session = await client.billingPortal.sessions.create({
@@ -414,30 +410,34 @@ accountRouter.post('/billing-portal', async (req, res) => {
 
 // ---- helpers --------------------------------------------------------
 
-export function linkGuestOrders(customerId: number, email: string) {
-  const orders = db
+export async function linkGuestOrders(customerId: number, email: string) {
+  const { results: orders } = await db
     .prepare(
       `SELECT id, reference, subtotal_cents, points_earned, customer_id
        FROM orders WHERE lower(email) = ? AND status IN ('paid','fulfilled')`,
     )
-    .all(email.toLowerCase()) as {
-    id: number
-    reference: string
-    subtotal_cents: number
-    points_earned: number
-    customer_id: number | null
-  }[]
+    .bind(email.toLowerCase())
+    .all<{
+      id: number
+      reference: string
+      subtotal_cents: number
+      points_earned: number
+      customer_id: number | null
+    }>()
   for (const o of orders) {
     if (o.customer_id) continue
-    db.prepare('UPDATE orders SET customer_id = ? WHERE id = ?').run(customerId, o.id)
+    const batch = [db.prepare('UPDATE orders SET customer_id = ? WHERE id = ?').bind(customerId, o.id)]
     const alreadyAwarded = o.points_earned > 0
     const pts = alreadyAwarded ? o.points_earned : pointsForSpend(o.subtotal_cents)
     if (pts > 0) {
-      db.prepare('UPDATE orders SET points_earned = ? WHERE id = ?').run(pts, o.id)
-      db.prepare(
-        'INSERT INTO points_ledger (customer_id, delta, reason, order_reference) VALUES (?, ?, ?, ?)',
-      ).run(customerId, pts, 'Order ' + o.reference, o.reference)
-      db.prepare('UPDATE customers SET points = points + ? WHERE id = ?').run(pts, customerId)
+      batch.push(
+        db.prepare('UPDATE orders SET points_earned = ? WHERE id = ?').bind(pts, o.id),
+        db
+          .prepare('INSERT INTO points_ledger (customer_id, delta, reason, order_reference) VALUES (?, ?, ?, ?)')
+          .bind(customerId, pts, 'Order ' + o.reference, o.reference),
+        db.prepare('UPDATE customers SET points = points + ? WHERE id = ?').bind(pts, customerId),
+      )
     }
+    await db.batch(batch)
   }
 }

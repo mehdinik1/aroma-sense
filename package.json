@@ -4,20 +4,24 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "postinstall": "patch-package",
     "dev": "concurrently -k -n web,api -c cyan,magenta \"vite\" \"npm:dev:api\"",
-    "dev:api": "tsx watch server/index.ts",
+    "dev:api": "wrangler dev",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "oxlint",
     "scrape": "node scripts/scrape.mjs",
-    "start": "node --import tsx server/index.ts"
+    "db:migrate:local": "wrangler d1 migrations apply aroma-sense-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply aroma-sense-db --remote",
+    "deploy:worker": "wrangler deploy",
+    "deploy:pages": "VITE_API_URL=https://api.vitamincshower.com/api npm run build && wrangler deploy -c wrangler.pages.toml"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cookie-parser": "^1.4.7",
-    "dotenv": "^16.4.7",
+    "cors": "^2.8.6",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^1.41.0",
@@ -30,8 +34,10 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260917.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^24.13.3",
@@ -41,10 +47,11 @@
     "autoprefixer": "^10.5.4",
     "concurrently": "^9.1.2",
     "oxlint": "^1.79.0",
+    "patch-package": "^8.0.1",
     "postcss": "^8.5.26",
     "tailwindcss": "^3.4.19",
-    "tsx": "^4.19.2",
     "typescript": "~6.0.2",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "wrangler": "^4.134.0"
   }
 }

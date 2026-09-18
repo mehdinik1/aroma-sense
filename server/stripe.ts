@@ -10,6 +10,10 @@ export function stripe(): Stripe {
       status: 503,
     })
   }
-  if (!client) client = new Stripe(env.stripeSecretKey)
+  if (!client) {
+    // Stripe's default HTTP client uses Node's `http`/`https` modules, which aren't
+    // available on Workers — use its fetch-based client instead.
+    client = new Stripe(env.stripeSecretKey, { httpClient: Stripe.createFetchHttpClient() })
+  }
   return client
 }

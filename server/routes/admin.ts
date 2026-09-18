@@ -10,16 +10,14 @@ export const adminRouter = Router()
 
 const loginSchema = z.object({ email: z.string().trim().email(), password: z.string().min(1) })
 
-adminRouter.post('/login', (req, res) => {
+adminRouter.post('/login', async (req, res) => {
   const parsed = loginSchema.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Enter a valid email and password.' })
     return
   }
   const email = parsed.data.email.toLowerCase()
-  const row = db.prepare('SELECT password_hash FROM admin_users WHERE email = ?').get(email) as
-    | { password_hash: string }
-    | undefined
+  const row = await db.prepare('SELECT password_hash FROM admin_users WHERE email = ?').bind(email).first<{ password_hash: string }>()
   if (!row || !bcrypt.compareSync(parsed.data.password, row.password_hash)) {
     res.status(401).json({ error: 'Incorrect email or password.' })
     return
@@ -44,39 +42,31 @@ adminRouter.get('/me', (req, res) => {
 
 adminRouter.use(requireAdmin)
 
-adminRouter.get('/stats', (_req, res) => {
-  const revenue = db
-    .prepare("SELECT COALESCE(SUM(total_cents), 0) AS c FROM orders WHERE status IN ('paid','fulfilled')")
-    .get() as { c: number }
-  const orderCount = db
-    .prepare("SELECT COUNT(*) AS c FROM orders WHERE status IN ('paid','fulfilled')")
-    .get() as { c: number }
-  const pending = db.prepare("SELECT COUNT(*) AS c FROM orders WHERE status = 'paid'").get() as {
-    c: number
-  }
-  const unread = db.prepare('SELECT COUNT(*) AS c FROM contact_messages WHERE handled = 0').get() as {
-    c: number
-  }
-  const newsletterCount = db.prepare('SELECT COUNT(*) AS c FROM newsletter_subscribers').get() as {
-    c: number
-  }
-  const lowStock = listProducts({ includeHidden: true })
+adminRouter.get('/stats', async (_req, res) => {
+  const [revenue, orderCount, pending, unread, newsletterCount] = await Promise.all([
+    db.prepare("SELECT COALESCE(SUM(total_cents), 0) AS c FROM orders WHERE status IN ('paid','fulfilled')").first<{ c: number }>(),
+    db.prepare("SELECT COUNT(*) AS c FROM orders WHERE status IN ('paid','fulfilled')").first<{ c: number }>(),
+    db.prepare("SELECT COUNT(*) AS c FROM orders WHERE status = 'paid'").first<{ c: number }>(),
+    db.prepare('SELECT COUNT(*) AS c FROM contact_messages WHERE handled = 0').first<{ c: number }>(),
+    db.prepare('SELECT COUNT(*) AS c FROM newsletter_subscribers').first<{ c: number }>(),
+  ])
+  const lowStock = (await listProducts({ includeHidden: true }))
     .filter((p) => p.stock <= 5)
     .map((p) => ({ handle: p.handle, title: p.title, stock: p.stock }))
     .sort((a, b) => a.stock - b.stock)
 
   res.json({
-    revenueCents: revenue.c,
-    orderCount: orderCount.c,
-    pendingCount: pending.c,
-    unreadMessages: unread.c,
-    newsletterSubscribers: newsletterCount.c,
+    revenueCents: revenue!.c,
+    orderCount: orderCount!.c,
+    pendingCount: pending!.c,
+    unreadMessages: unread!.c,
+    newsletterSubscribers: newsletterCount!.c,
     lowStock,
   })
 })
 
-adminRouter.get('/products', (_req, res) => {
-  res.json(listProducts({ includeHidden: true }))
+adminRouter.get('/products', async (_req, res) => {
+  res.json(await listProducts({ includeHidden: true }))
 })
 
 const productPatch = z.object({
@@ -87,13 +77,13 @@ const productPatch = z.object({
   featured: z.boolean().optional(),
 })
 
-adminRouter.patch('/products/:handle', (req, res) => {
+adminRouter.patch('/products/:handle', async (req, res) => {
   const parsed = productPatch.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid values.' })
     return
   }
-  const existing = db.prepare('SELECT handle FROM product_overrides WHERE handle = ?').get(req.params.handle)
+  const existing = await db.prepare('SELECT handle FROM product_overrides WHERE handle = ?').bind(req.params.handle).first()
   if (!existing) {
     res.status(404).json({ error: 'Unknown product.' })
     return
@@ -107,18 +97,19 @@ adminRouter.patch('/products/:handle', (req, res) => {
   if (p.visible !== undefined) { sets.push('visible = ?'); vals.push(p.visible ? 1 : 0) }
   if (p.featured !== undefined) { sets.push('featured = ?'); vals.push(p.featured ? 1 : 0) }
   if (sets.length) {
-    db.prepare(`UPDATE product_overrides SET ${sets.join(', ')} WHERE handle = ?`).run(
-      ...vals,
-      req.params.handle,
-    )
+    await db
+      .prepare(`UPDATE product_overrides SET ${sets.join(', ')} WHERE handle = ?`)
+      .bind(...vals, req.params.handle)
+      .run()
   }
-  res.json(getProduct(req.params.handle, { includeHidden: true }))
+  res.json(await getProduct(req.params.handle, { includeHidden: true }))
 })
 
-function hydrateOrder(row: Record<string, unknown>) {
-  const items = db
+async function hydrateOrder(row: Record<string, unknown>) {
+  const { results: items } = await db
     .prepare('SELECT * FROM order_items WHERE order_id = ?')
-    .all(row.id as number) as Record<string, unknown>[]
+    .bind(row.id as number)
+    .all<Record<string, unknown>>()
   return {
     id: row.id,
     reference: row.reference,
@@ -144,9 +135,9 @@ function hydrateOrder(row: Record<string, unknown>) {
   }
 }
 
-adminRouter.get('/orders', (_req, res) => {
-  const rows = db.prepare('SELECT * FROM orders ORDER BY id DESC').all() as Record<string, unknown>[]
-  res.json(rows.map(hydrateOrder))
+adminRouter.get('/orders', async (_req, res) => {
+  const { results: rows } = await db.prepare('SELECT * FROM orders ORDER BY id DESC').all<Record<string, unknown>>()
+  res.json(await Promise.all(rows.map(hydrateOrder)))
 })
 
 const orderPatch = z.object({
@@ -154,31 +145,29 @@ const orderPatch = z.object({
   trackingNumber: z.string().trim().max(120).optional(),
 })
 
-adminRouter.patch('/orders/:id', (req, res) => {
+adminRouter.patch('/orders/:id', async (req, res) => {
   const parsed = orderPatch.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid values.' })
     return
   }
-  const row = db.prepare('SELECT id FROM orders WHERE id = ?').get(Number(req.params.id))
+  const id = Number(req.params.id)
+  const row = await db.prepare('SELECT id FROM orders WHERE id = ?').bind(id).first()
   if (!row) {
     res.status(404).json({ error: 'Order not found.' })
     return
   }
   const { status, trackingNumber } = parsed.data
-  if (status) db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, Number(req.params.id))
-  if (trackingNumber !== undefined)
-    db.prepare('UPDATE orders SET tracking_number = ? WHERE id = ?').run(
-      trackingNumber || null,
-      Number(req.params.id),
-    )
-  res.json(hydrateOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(req.params.id)) as Record<string, unknown>))
+  if (status) await db.prepare('UPDATE orders SET status = ? WHERE id = ?').bind(status, id).run()
+  if (trackingNumber !== undefined) await db.prepare('UPDATE orders SET tracking_number = ? WHERE id = ?').bind(trackingNumber || null, id).run()
+  const updated = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first<Record<string, unknown>>()
+  res.json(await hydrateOrder(updated!))
 })
 
 // ---- customers ----------------------------------------------------------
 
-adminRouter.get('/customers', (_req, res) => {
-  const rows = db
+adminRouter.get('/customers', async (_req, res) => {
+  const { results: rows } = await db
     .prepare(
       `SELECT c.*,
               (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id AND o.status IN ('paid','fulfilled')) AS order_count,
@@ -186,7 +175,7 @@ adminRouter.get('/customers', (_req, res) => {
        FROM customers c
        ORDER BY c.id DESC`,
     )
-    .all() as Record<string, unknown>[]
+    .all<Record<string, unknown>>()
   res.json(
     rows.map((r) => ({
       id: r.id,
@@ -200,26 +189,20 @@ adminRouter.get('/customers', (_req, res) => {
   )
 })
 
-adminRouter.get('/customers/:id', (req, res) => {
+adminRouter.get('/customers/:id', async (req, res) => {
   const id = Number(req.params.id)
-  const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(id) as Record<string, unknown> | undefined
+  const customer = await db.prepare('SELECT * FROM customers WHERE id = ?').bind(id).first<Record<string, unknown>>()
   if (!customer) {
     res.status(404).json({ error: 'Customer not found.' })
     return
   }
-  const orders = (db.prepare('SELECT * FROM orders WHERE customer_id = ? ORDER BY id DESC').all(id) as Record<string, unknown>[]).map(
-    hydrateOrder,
-  )
-  const addresses = db.prepare('SELECT * FROM addresses WHERE customer_id = ? ORDER BY is_default DESC, id DESC').all(id) as Record<
-    string,
-    unknown
-  >[]
-  const ledger = (
-    db.prepare('SELECT * FROM points_ledger WHERE customer_id = ? ORDER BY id DESC LIMIT 50').all(id) as Record<
-      string,
-      unknown
-    >[]
-  ).map((r) => ({ delta: r.delta, reason: r.reason, orderReference: r.order_reference, createdAt: r.created_at }))
+  const [{ results: orderRows }, { results: addresses }, { results: ledgerRows }] = await Promise.all([
+    db.prepare('SELECT * FROM orders WHERE customer_id = ? ORDER BY id DESC').bind(id).all<Record<string, unknown>>(),
+    db.prepare('SELECT * FROM addresses WHERE customer_id = ? ORDER BY is_default DESC, id DESC').bind(id).all<Record<string, unknown>>(),
+    db.prepare('SELECT * FROM points_ledger WHERE customer_id = ? ORDER BY id DESC LIMIT 50').bind(id).all<Record<string, unknown>>(),
+  ])
+  const orders = await Promise.all(orderRows.map(hydrateOrder))
+  const ledger = ledgerRows.map((r) => ({ delta: r.delta, reason: r.reason, orderReference: r.order_reference, createdAt: r.created_at }))
 
   res.json({
     id: customer.id,
@@ -247,28 +230,24 @@ const pointsAdjustSchema = z.object({
   reason: z.string().trim().min(1).max(160),
 })
 
-adminRouter.post('/customers/:id/points', (req, res) => {
+adminRouter.post('/customers/:id/points', async (req, res) => {
   const id = Number(req.params.id)
   const parsed = pointsAdjustSchema.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message || 'Invalid values.' })
     return
   }
-  const customer = db.prepare('SELECT id, points FROM customers WHERE id = ?').get(id) as
-    | { id: number; points: number }
-    | undefined
+  const customer = await db.prepare('SELECT id, points FROM customers WHERE id = ?').bind(id).first<{ id: number; points: number }>()
   if (!customer) {
     res.status(404).json({ error: 'Customer not found.' })
     return
   }
   const nextBalance = Math.max(0, customer.points + parsed.data.delta)
   const applied = nextBalance - customer.points
-  db.prepare('UPDATE customers SET points = ? WHERE id = ?').run(nextBalance, id)
-  db.prepare('INSERT INTO points_ledger (customer_id, delta, reason) VALUES (?, ?, ?)').run(
-    id,
-    applied,
-    parsed.data.reason,
-  )
+  await db.batch([
+    db.prepare('UPDATE customers SET points = ? WHERE id = ?').bind(nextBalance, id),
+    db.prepare('INSERT INTO points_ledger (customer_id, delta, reason) VALUES (?, ?, ?)').bind(id, applied, parsed.data.reason),
+  ])
   res.json({ points: nextBalance })
 })
 
@@ -279,24 +258,19 @@ const passwordSchema = z.object({
   newPassword: z.string().min(8).max(200),
 })
 
-adminRouter.patch('/me/password', (req, res) => {
+adminRouter.patch('/me/password', async (req, res) => {
   const email = currentAdmin(req)!
   const parsed = passwordSchema.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Enter your current password and a new password of at least 8 characters.' })
     return
   }
-  const row = db.prepare('SELECT password_hash FROM admin_users WHERE email = ?').get(email) as
-    | { password_hash: string }
-    | undefined
+  const row = await db.prepare('SELECT password_hash FROM admin_users WHERE email = ?').bind(email).first<{ password_hash: string }>()
   if (!row || !bcrypt.compareSync(parsed.data.currentPassword, row.password_hash)) {
     res.status(401).json({ error: 'Current password is incorrect.' })
     return
   }
-  db.prepare('UPDATE admin_users SET password_hash = ? WHERE email = ?').run(
-    bcrypt.hashSync(parsed.data.newPassword, 10),
-    email,
-  )
+  await db.prepare('UPDATE admin_users SET password_hash = ? WHERE email = ?').bind(bcrypt.hashSync(parsed.data.newPassword, 10), email).run()
   res.json({ ok: true })
 })
 
@@ -313,9 +287,9 @@ function hydrateDiscountCode(row: Record<string, unknown>) {
   }
 }
 
-adminRouter.get('/discount-codes', (_req, res) => {
-  const rows = db.prepare('SELECT * FROM discount_codes ORDER BY created_at DESC').all() as Record<string, unknown>[]
-  res.json(rows.map(hydrateDiscountCode))
+adminRouter.get('/discount-codes', async (_req, res) => {
+  const { results } = await db.prepare('SELECT * FROM discount_codes ORDER BY created_at DESC').all<Record<string, unknown>>()
+  res.json(results.map(hydrateDiscountCode))
 })
 
 const discountCreateSchema = z.object({
@@ -324,62 +298,57 @@ const discountCreateSchema = z.object({
   maxRedemptions: z.number().int().min(1).optional(),
 })
 
-adminRouter.post('/discount-codes', (req, res) => {
+adminRouter.post('/discount-codes', async (req, res) => {
   const parsed = discountCreateSchema.safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Enter a code and a percentage between 1 and 100.' })
     return
   }
   const code = parsed.data.code.toUpperCase().replace(/\s+/g, '')
-  const exists = db.prepare('SELECT code FROM discount_codes WHERE code = ?').get(code)
+  const exists = await db.prepare('SELECT code FROM discount_codes WHERE code = ?').bind(code).first()
   if (exists) {
     res.status(409).json({ error: 'That code already exists.' })
     return
   }
-  db.prepare(
-    'INSERT INTO discount_codes (code, percent_off, max_redemptions) VALUES (?, ?, ?)',
-  ).run(code, parsed.data.percentOff, parsed.data.maxRedemptions ?? null)
-  const row = db.prepare('SELECT * FROM discount_codes WHERE code = ?').get(code) as Record<string, unknown>
-  res.json(hydrateDiscountCode(row))
+  await db
+    .prepare('INSERT INTO discount_codes (code, percent_off, max_redemptions) VALUES (?, ?, ?)')
+    .bind(code, parsed.data.percentOff, parsed.data.maxRedemptions ?? null)
+    .run()
+  const row = await db.prepare('SELECT * FROM discount_codes WHERE code = ?').bind(code).first<Record<string, unknown>>()
+  res.json(hydrateDiscountCode(row!))
 })
 
-adminRouter.patch('/discount-codes/:code', (req, res) => {
+adminRouter.patch('/discount-codes/:code', async (req, res) => {
   const parsed = z.object({ active: z.boolean() }).safeParse(req.body)
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid values.' })
     return
   }
   const code = req.params.code.toUpperCase()
-  const existing = db.prepare('SELECT code FROM discount_codes WHERE code = ?').get(code)
+  const existing = await db.prepare('SELECT code FROM discount_codes WHERE code = ?').bind(code).first()
   if (!existing) {
     res.status(404).json({ error: 'Code not found.' })
     return
   }
-  db.prepare('UPDATE discount_codes SET active = ? WHERE code = ?').run(parsed.data.active ? 1 : 0, code)
-  const row = db.prepare('SELECT * FROM discount_codes WHERE code = ?').get(code) as Record<string, unknown>
-  res.json(hydrateDiscountCode(row))
+  await db.prepare('UPDATE discount_codes SET active = ? WHERE code = ?').bind(parsed.data.active ? 1 : 0, code).run()
+  const row = await db.prepare('SELECT * FROM discount_codes WHERE code = ?').bind(code).first<Record<string, unknown>>()
+  res.json(hydrateDiscountCode(row!))
 })
 
-adminRouter.delete('/discount-codes/:code', (req, res) => {
-  db.prepare('DELETE FROM discount_codes WHERE code = ?').run(req.params.code.toUpperCase())
+adminRouter.delete('/discount-codes/:code', async (req, res) => {
+  await db.prepare('DELETE FROM discount_codes WHERE code = ?').bind(req.params.code.toUpperCase()).run()
   res.json({ ok: true })
 })
 
-adminRouter.get('/newsletter-subscribers', (_req, res) => {
-  const rows = db.prepare('SELECT * FROM newsletter_subscribers ORDER BY id DESC').all() as Record<
-    string,
-    unknown
-  >[]
-  res.json(rows.map((r) => ({ email: r.email, createdAt: r.created_at })))
+adminRouter.get('/newsletter-subscribers', async (_req, res) => {
+  const { results } = await db.prepare('SELECT * FROM newsletter_subscribers ORDER BY id DESC').all<Record<string, unknown>>()
+  res.json(results.map((r) => ({ email: r.email, createdAt: r.created_at })))
 })
 
-adminRouter.get('/contact-messages', (_req, res) => {
-  const rows = db.prepare('SELECT * FROM contact_messages ORDER BY id DESC').all() as Record<
-    string,
-    unknown
-  >[]
+adminRouter.get('/contact-messages', async (_req, res) => {
+  const { results } = await db.prepare('SELECT * FROM contact_messages ORDER BY id DESC').all<Record<string, unknown>>()
   res.json(
-    rows.map((r) => ({
+    results.map((r) => ({
       id: r.id,
       name: r.name,
       email: r.email,
@@ -390,19 +359,14 @@ adminRouter.get('/contact-messages', (_req, res) => {
   )
 })
 
-adminRouter.patch('/contact-messages/:id', (req, res) => {
+adminRouter.patch('/contact-messages/:id', async (req, res) => {
   const handled = z.object({ handled: z.boolean() }).safeParse(req.body)
   if (!handled.success) {
     res.status(400).json({ error: 'Invalid values.' })
     return
   }
-  db.prepare('UPDATE contact_messages SET handled = ? WHERE id = ?').run(
-    handled.data.handled ? 1 : 0,
-    Number(req.params.id),
-  )
-  const r = db.prepare('SELECT * FROM contact_messages WHERE id = ?').get(Number(req.params.id)) as Record<
-    string,
-    unknown
-  >
-  res.json({ id: r.id, name: r.name, email: r.email, message: r.message, handled: r.handled, createdAt: r.created_at })
+  const id = Number(req.params.id)
+  await db.prepare('UPDATE contact_messages SET handled = ? WHERE id = ?').bind(handled.data.handled ? 1 : 0, id).run()
+  const r = await db.prepare('SELECT * FROM contact_messages WHERE id = ?').bind(id).first<Record<string, unknown>>()
+  res.json({ id: r!.id, name: r!.name, email: r!.email, message: r!.message, handled: r!.handled, createdAt: r!.created_at })
 })

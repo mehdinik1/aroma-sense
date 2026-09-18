@@ -18,6 +18,13 @@ server/*.db-*
 data.db
 data.db-*
 
+# Wrangler / Cloudflare
+.wrangler
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+worker-configuration.d.ts
+
 # Editor
 .vscode/*
 !.vscode/extensions.json
