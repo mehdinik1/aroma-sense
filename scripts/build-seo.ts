@@ -7,7 +7,7 @@ import blog from '../server/data/blog.json' with { type: 'json' }
 import pages from '../server/data/pages.json' with { type: 'json' }
 import { abs, STATIC_SEO, stripHtml, truncate } from '../src/lib/seoShared.ts'
 
-type P = { handle: string; title: string; description: string; bodyHtml: string; images: string[]; variants: { sku: string | null; priceCents: number; available: boolean }[] }
+type P = { handle: string; title: string; description: string; metaDescription?: string; bodyHtml: string; images: string[]; variants: { sku: string | null; priceCents: number; available: boolean }[] }
 const products = catalog as unknown as P[]
 const byHandle = new Map(products.map((p) => [p.handle, p]))
 
@@ -30,7 +30,7 @@ if (mode === 'manifest') {
           p.handle,
           {
             t: p.title,
-            d: truncate(p.description || stripHtml(p.bodyHtml)),
+            d: truncate(p.metaDescription || p.description || stripHtml(p.bodyHtml)),
             i: p.images,
             sku: p.variants[0]?.sku ?? null,
             lo: Math.min(...prices),
