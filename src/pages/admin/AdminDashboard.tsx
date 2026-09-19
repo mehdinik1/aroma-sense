@@ -8,6 +8,7 @@ import { Input, Label } from '@/components/ui/field'
 import { api, ApiError } from '@/lib/api'
 import { invalidateStore } from '@/lib/store'
 import { formatDate, formatMoney, cn } from '@/lib/utils'
+import { topicLabel } from '@/lib/contactTopics'
 import type {
   AdminCustomer,
   AdminCustomerDetail,
@@ -521,6 +522,14 @@ function Messages() {
                   <a href={`mailto:${m.email}`} className="text-sm text-primary hover:underline">
                     {m.email}
                   </a>
+                  <span
+                    className={cn(
+                      'ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                      m.topic === 'bulk' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground',
+                    )}
+                  >
+                    {topicLabel(m.topic)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>{formatDate(m.createdAt)}</span>
@@ -535,6 +544,13 @@ function Messages() {
                   </button>
                 </div>
               </div>
+              {(m.company || m.quantity || m.orderReference) && (
+                <p className="mt-2 text-xs text-foreground">
+                  {[m.company && `Organization: ${m.company}`, m.quantity && `Shower heads: ${m.quantity}`, m.orderReference && `Order: ${m.orderReference}`]
+                    .filter(Boolean)
+                    .join('  ·  ')}
+                </p>
+              )}
               <p className="mt-3 whitespace-pre-line text-sm text-muted-foreground">{m.message}</p>
             </div>
           ))}

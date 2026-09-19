@@ -81,6 +81,10 @@ export type ContactMessage = {
   name: string
   email: string
   message: string
+  topic: string
+  orderReference: string | null
+  company: string | null
+  quantity: string | null
   createdAt: string
   handled: number
 }

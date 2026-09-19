@@ -56,7 +56,16 @@ export const api = {
   blog: () => req<BlogArticle[]>('/blog'),
   article: (handle: string) => req<BlogArticle>(`/blog/${handle}`),
   page: (slug: string) => req<ContentPage>(`/pages/${slug}`),
-  contact: (body: { name: string; email: string; message: string }) =>
+  contact: (body: {
+    name: string
+    email: string
+    message: string
+    topic: string
+    orderReference?: string
+    company?: string
+    quantity?: string
+    website?: string
+  }) =>
     req<{ ok: true }>('/contact', { method: 'POST', body: JSON.stringify(body) }),
   checkout: (
     items: { variantId: number; quantity: number; subscribe?: boolean }[],

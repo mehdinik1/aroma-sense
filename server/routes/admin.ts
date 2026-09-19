@@ -370,6 +370,10 @@ adminRouter.get('/contact-messages', async (_req, res) => {
       name: r.name,
       email: r.email,
       message: r.message,
+      topic: r.topic ?? 'other',
+      orderReference: r.order_reference ?? null,
+      company: r.company ?? null,
+      quantity: r.quantity ?? null,
       handled: r.handled,
       createdAt: r.created_at,
     })),
@@ -385,5 +389,16 @@ adminRouter.patch('/contact-messages/:id', async (req, res) => {
   const id = Number(req.params.id)
   await db.prepare('UPDATE contact_messages SET handled = ? WHERE id = ?').bind(handled.data.handled ? 1 : 0, id).run()
   const r = await db.prepare('SELECT * FROM contact_messages WHERE id = ?').bind(id).first<Record<string, unknown>>()
-  res.json({ id: r!.id, name: r!.name, email: r!.email, message: r!.message, handled: r!.handled, createdAt: r!.created_at })
+  res.json({
+    id: r!.id,
+    name: r!.name,
+    email: r!.email,
+    message: r!.message,
+    topic: r!.topic ?? 'other',
+    orderReference: r!.order_reference ?? null,
+    company: r!.company ?? null,
+    quantity: r!.quantity ?? null,
+    handled: r!.handled,
+    createdAt: r!.created_at,
+  })
 })

@@ -5,6 +5,7 @@ import { getCollection, getProduct, listCollections, listProducts } from '../cat
 import { paymentsEnabled } from '../env.ts'
 import { loyalty, SUBSCRIBABLE_TYPES, WELCOME_DISCOUNT_CODE, WELCOME_DISCOUNT_PCT } from '../loyalty.ts'
 import { sendContactAlert, sendWelcomeEmail } from '../email.ts'
+import { BULK_QUANTITIES, CONTACT_TOPIC_VALUES, TOPICS_WITH_ORDER_REF } from '../../src/lib/contactTopics.ts'
 
 export const publicRouter = Router()
 
@@ -112,11 +113,21 @@ publicRouter.post('/newsletter', async (req, res) => {
   res.json({ ok: true, code: WELCOME_DISCOUNT_CODE, percentOff: WELCOME_DISCOUNT_PCT })
 })
 
-const contactSchema = z.object({
-  name: z.string().trim().min(1).max(120),
-  email: z.string().trim().email().max(200),
-  message: z.string().trim().min(1).max(4000),
-})
+const contactSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    email: z.string().trim().email().max(200),
+    message: z.string().trim().min(1).max(4000),
+    topic: z.enum(CONTACT_TOPIC_VALUES).default('other'),
+    orderReference: z.string().trim().max(40).optional(),
+    company: z.string().trim().max(120).optional(),
+    quantity: z.enum(BULK_QUANTITIES).optional(),
+    website: z.string().max(200).optional(), // honeypot: real visitors never see or fill this
+  })
+  .superRefine((v, ctx) => {
+    if (v.topic === 'bulk' && !v.company) ctx.addIssue({ code: 'custom', path: ['company'], message: 'Please tell us your organization.' })
+    if (v.topic === 'bulk' && !v.quantity) ctx.addIssue({ code: 'custom', path: ['quantity'], message: 'Please choose roughly how many shower heads you need.' })
+  })
 
 publicRouter.post('/contact', async (req, res) => {
   const parsed = contactSchema.safeParse(req.body)
@@ -124,8 +135,18 @@ publicRouter.post('/contact', async (req, res) => {
     res.status(400).json({ error: 'Please check the form and try again.' })
     return
   }
-  const { name, email, message } = parsed.data
-  await db.prepare('INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)').bind(name, email, message).run()
-  await sendContactAlert({ name, email, message })
+  if (parsed.data.website) {
+    res.json({ ok: true }) // bot: pretend success, store and send nothing
+    return
+  }
+  const { name, email, message, topic } = parsed.data
+  const orderReference = TOPICS_WITH_ORDER_REF.includes(topic) ? parsed.data.orderReference || null : null
+  const company = topic === 'bulk' ? parsed.data.company || null : null
+  const quantity = topic === 'bulk' ? parsed.data.quantity || null : null
+  await db
+    .prepare('INSERT INTO contact_messages (name, email, message, topic, order_reference, company, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(name, email, message, topic, orderReference, company, quantity)
+    .run()
+  await sendContactAlert({ name, email, message, topic, orderReference, company, quantity })
   res.json({ ok: true })
 })

@@ -22,6 +22,7 @@ export const env = {
   resendApiKey: process.env.RESEND_API_KEY || '',
   emailFrom: process.env.EMAIL_FROM || 'Aroma Sense <orders@vitamincshower.com>',
   adminNotifyEmail: process.env.ADMIN_NOTIFY_EMAIL || 'admin@vitamincshower.com',
+  supportEmail: process.env.SUPPORT_EMAIL || 'hello@vitamincshower.com',
   isProd: process.env.NODE_ENV === 'production',
 }
 

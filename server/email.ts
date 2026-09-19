@@ -1,4 +1,5 @@
 import { env } from './env.ts'
+import { topicLabel } from '../src/lib/contactTopics.ts'
 
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -145,7 +146,7 @@ export async function sendOrderEmails(o: OrderEmailData) {
   if (o.email) {
     await send({
       to: o.email,
-      replyTo: env.adminNotifyEmail,
+      replyTo: env.supportEmail,
       subject: `Your Aroma Sense order ${o.reference}`,
       html: layout({
         preheader: `Thank you — we've received order ${o.reference}.`,
@@ -185,17 +186,33 @@ export async function sendOrderEmails(o: OrderEmailData) {
   })
 }
 
-export async function sendContactAlert(c: { name: string; email: string; message: string }) {
+export async function sendContactAlert(c: {
+  name: string
+  email: string
+  message: string
+  topic: string
+  orderReference: string | null
+  company: string | null
+  quantity: string | null
+}) {
+  const label_ = topicLabel(c.topic)
+  const detail = (k: string, v: string | null) => (v ? `<div style="height:8px"></div>${label(k)}${esc(v)}` : '')
   await send({
     to: env.adminNotifyEmail,
     replyTo: c.email,
-    subject: `Contact form: ${c.name}`,
+    subject: `[${label_}] ${c.name}${c.company ? ' — ' + c.company : ''}`,
     html: layout({
       preheader: c.message.slice(0, 90),
-      eyebrow: 'Store alert',
-      title: 'New contact message',
+      eyebrow: c.topic === 'bulk' ? 'Bulk / wholesale lead' : 'Store alert',
+      title: c.topic === 'bulk' ? 'New bulk order inquiry' : 'New contact message',
       body:
-        panel(`${label('From')}<strong style="color:${INK}">${esc(c.name)}</strong><br><a href="mailto:${esc(c.email)}" style="color:${GOLD_DEEP}">${esc(c.email)}</a>`) +
+        panel(
+          `${label('Topic')}<strong style="color:${INK}">${esc(label_)}</strong>` +
+            `<div style="height:8px"></div>${label('From')}<strong style="color:${INK}">${esc(c.name)}</strong><br><a href="mailto:${esc(c.email)}" style="color:${GOLD_DEEP}">${esc(c.email)}</a>` +
+            detail('Organization', c.company) +
+            detail('Shower heads needed', c.quantity) +
+            detail('Order reference', c.orderReference),
+        ) +
         `${label('Message')}<div style="font-size:15px;line-height:1.7;white-space:pre-wrap;border-left:3px solid ${GOLD};padding:2px 0 2px 16px;color:${INK}">${esc(c.message)}</div>` +
         small(`Just hit <strong>Reply</strong> — your response goes straight to ${esc(c.name)}.`),
     }),
@@ -236,7 +253,7 @@ export async function sendShippingEmail(o: {
   const url = o.trackingNumber ? trackingUrl(o.trackingNumber) : null
   await send({
     to: o.email,
-    replyTo: env.adminNotifyEmail,
+    replyTo: env.supportEmail,
     subject: `Your Aroma Sense order ${o.reference} has shipped`,
     html: layout({
       preheader: o.trackingNumber ? `Tracking number ${o.trackingNumber}` : `Order ${o.reference} is on its way.`,
@@ -260,7 +277,7 @@ export async function sendShippingEmail(o: {
 export async function sendPasswordResetEmail(to: string, link: string) {
   await send({
     to,
-    replyTo: env.adminNotifyEmail,
+    replyTo: env.supportEmail,
     subject: 'Reset your Aroma Sense password',
     html: layout({
       preheader: 'Use this link within 1 hour to choose a new password.',
@@ -282,7 +299,7 @@ export async function sendWelcomeEmail(to: string, code: string, percentOff: num
     `<td style="padding:8px 0;font-size:14px;line-height:1.55"><strong style="color:${INK}">${title}</strong><br><span style="color:${MUTED}">${text}</span></td></tr>`
   await send({
     to,
-    replyTo: env.adminNotifyEmail,
+    replyTo: env.supportEmail,
     subject: `Welcome to Aroma Sense — here's ${percentOff}% off`,
     html: layout({
       preheader: `Your ${percentOff}% welcome code is inside.`,

@@ -1,7 +1,7 @@
 export const site = {
   name: 'Aroma Sense',
   tagline: 'Vitamin C aromatherapy showers',
-  email: 'hello@aromasense.com', // TODO: confirm real address
+  email: 'hello@vitamincshower.com',
   phone: '+1 (800) 000-0000', // TODO: confirm real number
   shippingNote: 'Free shipping across the United States · U.S. orders only',
   currencyNote: 'All prices in USD',

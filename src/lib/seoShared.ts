@@ -117,6 +117,7 @@ export const organizationLd = () => ({
   url: SITE_URL,
   logo: abs('/favicon.svg'),
   description: HOME_DESCRIPTION,
+  contactPoint: { '@type': 'ContactPoint', contactType: 'customer support', email: 'hello@vitamincshower.com' },
 })
 
 export const websiteLd = () => ({
