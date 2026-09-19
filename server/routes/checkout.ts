@@ -25,6 +25,8 @@ const schema = z.object({
   pointsToRedeem: z.number().int().min(0).optional(),
   /** "Build your kit" bundle — server re-checks the contents before discounting */
   kit: z.boolean().optional(),
+  // express consent to ONE cart reminder email if they don't finish (unticked box on the cart page)
+  reminderEmail: z.string().trim().email().max(200).optional(),
   discountCode: z.string().trim().max(40).optional(),
 })
 
@@ -246,8 +248,9 @@ checkoutRouter.post('/checkout', async (req, res) => {
       .prepare(
         `INSERT INTO orders
            (reference, status, subtotal_cents, shipping_cents, discount_cents, total_cents,
-            stripe_session_id, customer_id, points_redeemed, is_subscription, discount_code)
-         VALUES (?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?, ?)`,
+            stripe_session_id, customer_id, points_redeemed, is_subscription, discount_code,
+            checkout_url, reminder_email, reminder_consent_at)
+         VALUES (?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         reference,
@@ -259,6 +262,9 @@ checkoutRouter.post('/checkout', async (req, res) => {
         pointsRedeemed,
         isSubscription ? 1 : 0,
         appliedCode,
+        session.url ?? null,
+        parsed.data.reminderEmail?.toLowerCase() ?? null,
+        parsed.data.reminderEmail ? new Date().toISOString().replace('T', ' ').slice(0, 19) : null,
       )
       .run()
     const orderId = orderInsert.meta.last_row_id

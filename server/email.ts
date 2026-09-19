@@ -1,5 +1,6 @@
 import { env } from './env.ts'
 import { topicLabel } from '../src/lib/contactTopics.ts'
+import { unsubscribeApiUrl, unsubscribePageUrl } from './marketing.ts'
 
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -18,8 +19,8 @@ const SERIF = "Georgia,'Times New Roman',serif"
 const SANS = "-apple-system,'Segoe UI',Helvetica,Arial,sans-serif"
 
 // Never throws — an email failure must not break checkout fulfilment or form submission.
-async function send(opts: { to: string; subject: string; html: string; replyTo?: string }) {
-  if (!env.resendApiKey) return
+async function send(opts: { to: string; subject: string; html: string; replyTo?: string; headers?: Record<string, string> }): Promise<boolean> {
+  if (!env.resendApiKey) return false
   const text = opts.html
     .replace(/<(style|head)[\s\S]*?<\/\1>/gi, '')
     .replace(/<\/(p|div|tr|h\d|table)>/gi, '\n')
@@ -44,17 +45,20 @@ async function send(opts: { to: string; subject: string; html: string; replyTo?:
         html: opts.html,
         text,
         ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+        ...(opts.headers ? { headers: opts.headers } : {}),
       }),
     })
     if (!res.ok) console.error('[email] send failed', res.status, await res.text())
+    return res.ok
   } catch (err) {
     console.error('[email] send error', err)
+    return false
   }
 }
 
 // ---- shared building blocks ------------------------------------------------
 
-function layout(o: { preheader: string; eyebrow: string; title: string; body: string; footerNote?: string }) {
+function layout(o: { preheader: string; eyebrow: string; title: string; body: string; footerNote?: string; unsubscribeUrl?: string }) {
   const link = (href: string, label: string) =>
     `<a href="${esc(href)}" style="color:${GOLD};text-decoration:none">${label}</a>`
   return (
@@ -77,7 +81,11 @@ function layout(o: { preheader: string; eyebrow: string; title: string; body: st
     // footer
     `<tr><td align="center" style="padding:28px 16px 8px;font-family:${SANS};font-size:12px;line-height:1.7;color:#8f8a7e">` +
     `${link(env.appUrl + '/shop', 'Shop')} &nbsp;&middot;&nbsp; ${link(env.appUrl + '/rewards', 'Rewards')} &nbsp;&middot;&nbsp; ${link(env.appUrl + '/faq', 'FAQ')} &nbsp;&middot;&nbsp; ${link(env.appUrl + '/contact', 'Contact')}` +
-    `<br>${o.footerNote ? esc(o.footerNote) + '<br>' : ''}&copy; ${new Date().getUTCFullYear()} Aroma Sense &middot; vitamincshower.com` +
+    `<br>${o.footerNote ? esc(o.footerNote) + '<br>' : ''}` +
+    (o.unsubscribeUrl
+      ? `${esc(env.businessName)}${env.mailingAddress ? ' &middot; ' + esc(env.mailingAddress) : ''}<br>${link(o.unsubscribeUrl, 'Unsubscribe')} from marketing emails<br>`
+      : '') +
+    `&copy; ${new Date().getUTCFullYear()} Aroma Sense &middot; vitamincshower.com` +
     `</td></tr></table></td></tr></table></body></html>`
   )
 }
@@ -117,8 +125,8 @@ export type OrderEmailData = {
   }[]
 }
 
-function itemsBlock(o: OrderEmailData) {
-  const rows = o.items
+function itemRows(items: OrderEmailData['items']) {
+  return items
     .map((i) => {
       const img = i.image
         ? `<img src="${esc(i.image.startsWith('http') ? i.image : env.appUrl + i.image)}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:4px;border:1px solid ${RULE}">`
@@ -131,6 +139,10 @@ function itemsBlock(o: OrderEmailData) {
       )
     })
     .join('')
+}
+
+function itemsBlock(o: OrderEmailData) {
+  const rows = itemRows(o.items)
   const subtotal = o.totalCents - o.shippingCents
   return (
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 4px">${rows}</table>` +
@@ -294,6 +306,7 @@ export async function sendPasswordResetEmail(to: string, link: string) {
 }
 
 export async function sendWelcomeEmail(to: string, code: string, percentOff: number) {
+  const unsubscribeUrl = await unsubscribePageUrl(to)
   const perk = (title: string, text: string) =>
     `<tr><td width="28" valign="top" style="padding:8px 0;color:${GOLD};font-size:16px">&#10022;</td>` +
     `<td style="padding:8px 0;font-size:14px;line-height:1.55"><strong style="color:${INK}">${title}</strong><br><span style="color:${MUTED}">${text}</span></td></tr>`
@@ -301,7 +314,9 @@ export async function sendWelcomeEmail(to: string, code: string, percentOff: num
     to,
     replyTo: env.supportEmail,
     subject: `Welcome to Aroma Sense — here's ${percentOff}% off`,
+    headers: { 'List-Unsubscribe': `<${await unsubscribeApiUrl(to)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     html: layout({
+      unsubscribeUrl,
       preheader: `Your ${percentOff}% welcome code is inside.`,
       eyebrow: 'Welcome',
       title: `Welcome to the ritual.`,
@@ -320,6 +335,35 @@ export async function sendWelcomeEmail(to: string, code: string, percentOff: num
         perk('Rewards on every order', 'Earn points you can redeem toward future purchases.') +
         `</table>`,
       footerNote: 'You received this because you signed up at vitamincshower.com.',
+    }),
+  })
+}
+
+export async function sendAbandonedCartEmail(o: {
+  email: string
+  name: string | null
+  items: OrderEmailData['items']
+  recoveryUrl: string
+}): Promise<boolean> {
+  const firstName = o.name?.split(' ')[0]
+  const subtotal = o.items.reduce((n, i) => n + i.price_cents * i.quantity, 0)
+  return send({
+    to: o.email,
+    replyTo: env.supportEmail,
+    subject: 'You left something in your cart',
+    headers: { 'List-Unsubscribe': `<${await unsubscribeApiUrl(o.email)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+    html: layout({
+      preheader: 'Your cart is saved. Pick up where you left off.',
+      eyebrow: 'Your cart',
+      title: `Still thinking it over${firstName ? ', ' + esc(firstName) : ''}?`,
+      unsubscribeUrl: await unsubscribePageUrl(o.email),
+      footerNote: 'You received this because you asked to hear from us at checkout on vitamincshower.com.',
+      body:
+        p(`We saved your cart so you can pick up right where you left off.`) +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 4px">${itemRows(o.items)}</table>` +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px"><tr><td style="padding:10px 0 2px;color:${MUTED}">Subtotal</td><td align="right" style="padding:10px 0 2px;color:${INK}">${money(subtotal)}</td></tr></table>` +
+        button(o.recoveryUrl, 'Return to checkout') +
+        small(`Not sure about scent, fit or which shower head is right for your bathroom? Just reply to this email and we'll help.`),
     }),
   })
 }

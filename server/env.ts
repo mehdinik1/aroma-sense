@@ -23,6 +23,9 @@ export const env = {
   emailFrom: process.env.EMAIL_FROM || 'Aroma Sense <orders@vitamincshower.com>',
   adminNotifyEmail: process.env.ADMIN_NOTIFY_EMAIL || 'admin@vitamincshower.com',
   supportEmail: process.env.SUPPORT_EMAIL || 'hello@vitamincshower.com',
+  apiUrl: process.env.API_URL || 'https://api.vitamincshower.com',
+  businessName: process.env.BUSINESS_NAME || 'Aroma Sense',
+  mailingAddress: process.env.MAILING_ADDRESS || '',
   isProd: process.env.NODE_ENV === 'production',
 }
 

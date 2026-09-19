@@ -70,7 +70,7 @@ export const STATIC_SEO: Record<string, StaticSeo> = {
 
 // Private / transactional areas: never indexed.
 // /deal-of-the-month is a client-side redirect to the current deal product
-export const NOINDEX_PREFIXES = ['/cart', '/checkout', '/account', '/admin', '/search', '/deal-of-the-month']
+export const NOINDEX_PREFIXES = ['/cart', '/checkout', '/account', '/admin', '/search', '/deal-of-the-month', '/unsubscribe']
 
 export const normalizePath = (p: string) => (p.length > 1 ? p.replace(/\/+$/, '') : p) || '/'
 export const isNoindexPath = (p: string) => NOINDEX_PREFIXES.some((x) => p === x || p.startsWith(x + '/'))

@@ -7,6 +7,7 @@ import { jsonBody } from './bodyParser.ts'
 import { webhookRouter } from './routes/webhook.ts'
 import { publicRouter } from './routes/public.ts'
 import { feedsRouter } from './routes/feeds.ts'
+import { unsubscribeRouter } from './routes/unsubscribe.ts'
 import { checkoutRouter } from './routes/checkout.ts'
 import { adminRouter } from './routes/admin.ts'
 import { accountRouter } from './routes/account.ts'
@@ -32,6 +33,7 @@ app.use(async (_req, res, next) => {
 // Webhook must be mounted before jsonBody() so it can read the raw, unparsed body.
 app.use('/api', webhookRouter)
 
+app.use('/api', unsubscribeRouter)
 app.use(jsonBody())
 app.use(cookieParser())
 

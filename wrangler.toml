@@ -20,3 +20,7 @@ migrations_dir = "migrations"
 [[routes]]
 pattern = "api.vitamincshower.com"
 custom_domain = true
+
+# Abandoned-cart reminders (server/reminders.ts)
+[triggers]
+crons = ["*/15 * * * *"]

@@ -4,6 +4,7 @@ import { Minus, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { Container } from '@/components/site/Container'
 import { PageHero } from '@/components/site/PageHero'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/field'
 import { useCart } from '@/lib/cart'
 import { useAccount } from '@/lib/account'
 import { api, ApiError } from '@/lib/api'
@@ -20,6 +21,8 @@ export function CartPage() {
   const [config, setConfig] = useState<StoreConfig | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [remind, setRemind] = useState(false)
+  const [reminderEmail, setReminderEmail] = useState('')
   const [redeem, setRedeem] = useState(0)
   const [codeInput, setCodeInput] = useState('')
   const [appliedCode, setAppliedCode] = useState<{ code: string; percentOff: number } | null>(null)
@@ -91,13 +94,22 @@ export function CartPage() {
     track('view_cart', { currency: 'USD', value: itemsValue(items), items })
   }, [lines])
 
+  useEffect(() => {
+    if (customer?.email) setReminderEmail((cur) => cur || customer.email)
+  }, [customer])
+
   async function checkout() {
     setError(null)
+    const wantsReminder = remind && !allSubscription
+    if (wantsReminder && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reminderEmail.trim())) {
+      setError('Enter a valid email address to get a reminder, or untick the reminder box.')
+      return
+    }
     setLoading(true)
     try {
       const { url } = await api.checkout(
         lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity, subscribe: l.subscribe })),
-        { pointsToRedeem: allSubscription ? 0 : redeem, discountCode: appliedCode?.code },
+        { pointsToRedeem: allSubscription ? 0 : redeem, discountCode: appliedCode?.code, reminderEmail: wantsReminder ? reminderEmail.trim() : undefined },
       )
       const items = lines.map(lineToItem)
       track('begin_checkout', { currency: 'USD', value: total / 100, shipping: shippingCents / 100, items, ...(appliedCode ? { coupon: appliedCode.code } : {}) })
@@ -342,6 +354,27 @@ export function CartPage() {
                 </p>
               )}
 
+              {!allSubscription && (
+                <div className="mt-4 rounded-lg border border-border p-3 text-xs">
+                  <label className="flex cursor-pointer items-start gap-2">
+                    <input type="checkbox" className="mt-0.5 h-3.5 w-3.5 accent-[hsl(var(--primary))]" checked={remind} onChange={(e) => setRemind(e.target.checked)} />
+                    <span className="text-muted-foreground">
+                      Email me one reminder from Aroma Sense if I don&rsquo;t finish checking out. I can unsubscribe at any time.
+                    </span>
+                  </label>
+                  {remind && (
+                    <Input
+                      type="email"
+                      autoComplete="email"
+                      aria-label="Email for your cart reminder"
+                      placeholder="you@email.com"
+                      value={reminderEmail}
+                      onChange={(e) => setReminderEmail(e.target.value)}
+                      className="mt-2 h-9 text-sm"
+                    />
+                  )}
+                </div>
+              )}
               {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
               {config?.paymentsEnabled === false && (
                 <p className="mt-3 rounded-lg bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">

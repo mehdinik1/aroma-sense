@@ -105,6 +105,7 @@ publicRouter.post('/newsletter', async (req, res) => {
     return
   }
   const email = parsed.data.email.toLowerCase()
+  await db.prepare('DELETE FROM email_suppressions WHERE email = ?').bind(email).run() // signing up again is fresh consent
   const inserted = await db
     .prepare('INSERT INTO newsletter_subscribers (email) VALUES (?) ON CONFLICT(email) DO NOTHING')
     .bind(email)

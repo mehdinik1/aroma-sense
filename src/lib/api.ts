@@ -67,13 +67,15 @@ export const api = {
     website?: string
   }) =>
     req<{ ok: true }>('/contact', { method: 'POST', body: JSON.stringify(body) }),
+  unsubscribe: (email: string, token: string) =>
+    req<{ ok: true }>(`/unsubscribe?e=${encodeURIComponent(email)}&t=${encodeURIComponent(token)}`, { method: 'POST' }),
   checkout: (
     items: { variantId: number; quantity: number; subscribe?: boolean }[],
-    opts: { pointsToRedeem?: number; kit?: boolean; discountCode?: string } = {},
+    opts: { pointsToRedeem?: number; kit?: boolean; discountCode?: string; reminderEmail?: string } = {},
   ) =>
     req<{ url: string }>('/checkout', {
       method: 'POST',
-      body: JSON.stringify({ items, pointsToRedeem: opts.pointsToRedeem ?? 0, kit: !!opts.kit, discountCode: opts.discountCode }),
+      body: JSON.stringify({ items, pointsToRedeem: opts.pointsToRedeem ?? 0, kit: !!opts.kit, discountCode: opts.discountCode, reminderEmail: opts.reminderEmail }),
     }),
   config: () => req<StoreConfig>('/config'),
   validateDiscountCode: (code: string) =>
