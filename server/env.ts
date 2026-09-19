@@ -26,4 +26,5 @@ export const env = {
   isProd: process.env.NODE_ENV === 'production',
 }
 
-export const paymentsEnabled = () => env.stripeSecretKey.startsWith('sk_')
+// standard (sk_) and restricted (rk_) Stripe secret keys both work
+export const paymentsEnabled = () => /^(sk|rk)_/.test(env.stripeSecretKey)
