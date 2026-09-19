@@ -6,7 +6,7 @@ export const SITE_NAME = 'Aroma Sense'
 export const DEFAULT_IMAGE = '/products/as-luxe/0.jpg'
 export const HOME_TITLE = 'Aroma Sense — Vitamin C Aromatherapy Shower Heads'
 export const HOME_DESCRIPTION =
-  'Aroma Sense turns your daily shower into a spa. Vitamin C aromatherapy shower heads, cartridges and starter kits that filter chlorine for healthier hair and skin. Free U.S. shipping.'
+  'Aroma Sense turns your daily shower into a spa. Vitamin C aromatherapy shower heads, cartridges and starter kits that filter chlorine for healthier hair and skin. Free U.S. shipping over $100.'
 
 export type StaticSeo = { title: string; description: string; canonical?: string }
 

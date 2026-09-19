@@ -9,6 +9,7 @@ import { useAccount } from '@/lib/account'
 import { api, ApiError } from '@/lib/api'
 import { loadConfig } from '@/lib/store'
 import { itemsValue, lineToItem, saveCheckoutSnapshot, track } from '@/lib/analytics'
+import { amountToFreeShippingCents, FREE_SHIPPING_MIN_CENTS, standardShippingCents } from '@/lib/shipping'
 import { cn, formatMoney } from '@/lib/utils'
 import type { StoreConfig } from '@/lib/types'
 
@@ -54,6 +55,10 @@ export function CartPage() {
   const pointsDiscountCents = allSubscription ? 0 : (redeem / redeemStep) * redeemValue
   const discountCents = codeDiscountCents + pointsDiscountCents
   const total = Math.max(0, subtotalCents - discountCents)
+  // subscriptions are billed without a shipping line, so only one-time orders carry the standard rate
+  const shippingCents = allSubscription ? 0 : standardShippingCents(subtotalCents)
+  const toFreeShipping = allSubscription ? 0 : amountToFreeShippingCents(subtotalCents)
+  const orderTotal = total + shippingCents
 
   const pointsToEarn = allSubscription
     ? 0
@@ -95,8 +100,8 @@ export function CartPage() {
         { pointsToRedeem: allSubscription ? 0 : redeem, discountCode: appliedCode?.code },
       )
       const items = lines.map(lineToItem)
-      track('begin_checkout', { currency: 'USD', value: total / 100, items, ...(appliedCode ? { coupon: appliedCode.code } : {}) })
-      saveCheckoutSnapshot({ items, value: total / 100, coupon: appliedCode?.code })
+      track('begin_checkout', { currency: 'USD', value: total / 100, shipping: shippingCents / 100, items, ...(appliedCode ? { coupon: appliedCode.code } : {}) })
+      saveCheckoutSnapshot({ items, value: total / 100, shipping: shippingCents / 100, coupon: appliedCode?.code })
       window.location.href = url
     } catch (err) {
       if (err instanceof ApiError && err.code === 'auth_required') {
@@ -220,12 +225,31 @@ export function CartPage() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span className="font-medium">Free (Standard, US)</span>
+                  <span className="font-medium">{shippingCents ? formatMoney(shippingCents) : 'Free'}</span>
                 </div>
               </div>
+              {!allSubscription && (
+                <div className="mt-3 rounded-lg bg-secondary/40 px-3 py-2.5 text-xs">
+                  {toFreeShipping > 0 ? (
+                    <>
+                      <p className="text-muted-foreground">
+                        Add <strong className="text-foreground">{formatMoney(toFreeShipping)}</strong> more for free shipping
+                      </p>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${Math.min(100, (subtotalCents / FREE_SHIPPING_MIN_CENTS) * 100)}%` }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <p className="font-medium text-primary">You&rsquo;ve unlocked free standard shipping</p>
+                  )}
+                </div>
+              )}
               <div className="mt-4 flex justify-between border-t border-border pt-4 text-base font-semibold">
                 <span>{allSubscription ? 'Per month' : 'Total'}</span>
-                <span>{formatMoney(total)}</span>
+                <span>{formatMoney(orderTotal)}</span>
               </div>
 
               {/* Discount code */}

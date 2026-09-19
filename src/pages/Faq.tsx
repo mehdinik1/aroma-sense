@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     q: 'How much is shipping?',
-    a: 'Standard shipping is free everywhere in the US (3–6 business days). An expedited 2-day option is available at checkout.',
+    a: 'Standard shipping is free on U.S. orders of $100 or more, and $8 on smaller orders (3–6 business days, plus 1–2 business days to process your order). Expedited shipping (1–2 business days) is $19.99 and is available at checkout.',
   },
   {
     q: 'What is your return policy?',

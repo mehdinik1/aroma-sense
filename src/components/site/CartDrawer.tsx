@@ -3,9 +3,11 @@ import { Minus, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/cart'
 import { formatMoney } from '@/lib/utils'
+import { amountToFreeShippingCents } from '@/lib/shipping'
 
 export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { lines, subtotalCents, setQty, remove } = useCart()
+  const toFreeShipping = amountToFreeShippingCents(subtotalCents)
   const navigate = useNavigate()
 
   return (
@@ -91,7 +93,14 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
                 <span className="font-semibold">{formatMoney(subtotalCents)}</span>
               </div>
               <p className="mb-3 text-xs text-muted-foreground">
-                Shipping calculated at checkout. Taxes where applicable.
+                {toFreeShipping > 0 ? (
+                  <>
+                    Add <strong className="text-foreground">{formatMoney(toFreeShipping)}</strong> more for free shipping.{' '}
+                  </>
+                ) : (
+                  <span className="font-medium text-primary">You&rsquo;ve unlocked free shipping. </span>
+                )}
+                Shipping and taxes calculated at checkout.
               </p>
               <Button
                 className="w-full"

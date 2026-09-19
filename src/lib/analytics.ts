@@ -52,7 +52,7 @@ export const itemsValue = (items: GaItem[]) => Math.round(items.reduce((n, i) =>
 // leaves a snapshot here right before redirecting to Stripe.
 const SNAPSHOT_KEY = 'aroma-sense-ga-checkout-v1'
 
-export type CheckoutSnapshot = { items: GaItem[]; value: number; coupon?: string }
+export type CheckoutSnapshot = { items: GaItem[]; value: number; shipping?: number; coupon?: string }
 
 export function saveCheckoutSnapshot(s: CheckoutSnapshot) {
   try {
@@ -74,7 +74,7 @@ export function trackPurchaseOnce(ref: string) {
       transaction_id: ref,
       currency: 'USD',
       value: s.value,
-      shipping: 0,
+      shipping: s.shipping ?? 0,
       ...(s.coupon ? { coupon: s.coupon } : {}),
       items: s.items,
     })

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 // Backed by the real store policies (server/data/pages.json: shipping-policy,
 // returns-policy, warranty) — no invented guarantees.
 const badges = [
-  { icon: Truck, label: 'Free US shipping', sub: '3–6 business days' },
+  { icon: Truck, label: 'Free US shipping over $100', sub: '3–6 business days' },
   { icon: Undo2, label: '30-day returns', sub: 'Unused, original packaging' },
   { icon: Award, label: '1-year warranty', sub: 'Manufacturing defects' },
   { icon: Lock, label: 'Secure checkout', sub: 'Stripe · Apple & Google Pay' },

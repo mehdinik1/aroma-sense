@@ -78,12 +78,7 @@ feedsRouter.get('/feeds/google-products.xml', async (_req, res) => {
           tag('product_type', p.productType) +
           (CATEGORY[p.productType] ? tag('google_product_category', CATEGORY[p.productType]) : '') +
           (multi ? tag('item_group_id', p.id) : '') +
-          (p.productType === 'Starter Kits' ? tag('is_bundle', 'yes') : '') +
-          '<g:shipping>' +
-          tag('country', 'US') +
-          tag('service', 'Standard') +
-          tag('price', '0.00 USD') +
-          '</g:shipping>' +
+          (p.productType === 'Starter Kits' ? tag('is_bundle', 'yes') : '') + // shipping is set in Merchant Center: it depends on order value
           '</item>',
       )
     }

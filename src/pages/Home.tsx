@@ -67,7 +67,7 @@ export function Home() {
               <span className="flex items-center gap-1.5">
                 <Star className="h-3.5 w-3.5 fill-primary text-primary" /> Trusted by luxury hotel spas
               </span>
-              <span>Complimentary U.S. shipping</span>
+              <span>Free U.S. shipping over $100</span>
             </div>
           </Reveal>
 

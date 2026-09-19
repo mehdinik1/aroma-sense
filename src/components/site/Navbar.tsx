@@ -34,7 +34,7 @@ export function Navbar({ onOpenCart }: { onOpenCart: () => void }) {
   return (
     <header className="sticky top-0 z-40 border-b border-primary/20 bg-background/95 backdrop-blur">
       <div className="border-b border-primary/15 bg-card py-2 text-center text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
-        Complimentary shipping across the United States
+        Free U.S. shipping on orders over $100
       </div>
 
       <div className="relative" onMouseLeave={() => setOpenMega(null)}>
