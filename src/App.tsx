@@ -28,6 +28,7 @@ import { NotFound } from '@/pages/NotFound'
 import { AdminLogin } from '@/pages/admin/AdminLogin'
 import { AdminDashboard } from '@/pages/admin/AdminDashboard'
 import { AccountAuth } from '@/pages/account/AccountAuth'
+import { RouteSeo } from '@/lib/seo'
 import { ForgotPassword, ResetPassword } from '@/pages/account/PasswordReset'
 import { AccountLayout } from '@/pages/account/AccountLayout'
 import { AccountOverview } from '@/pages/account/AccountOverview'
@@ -48,6 +49,7 @@ export default function App() {
       <AccountProvider>
         <WishlistProvider>
         <CartProvider>
+          <RouteSeo />
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />

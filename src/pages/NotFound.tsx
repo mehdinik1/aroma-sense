@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { Container } from '@/components/site/Container'
+import { useSeo } from '@/lib/seo'
 
 export function NotFound() {
+  useSeo({ title: 'Page not found | Aroma Sense', description: 'This page could not be found.', path: '/404', noindex: true })
   return (
     <Container className="py-24 text-center">
       <p className="font-display text-5xl text-primary">404</p>

@@ -90,7 +90,8 @@ let seeded: Promise<void> | null = null
 
 /** Call at the top of every request (cheap after the first call in this isolate). */
 export function ensureSeeded(): Promise<void> {
-  if (!seeded) seeded = doSeed()
+  // a failed seed must not be cached, or one transient error would 503 every request until restart
+  if (!seeded) seeded = doSeed().catch((err) => { seeded = null; throw err })
   return seeded
 }
 

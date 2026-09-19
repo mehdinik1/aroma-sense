@@ -4,10 +4,23 @@ import { Container } from '@/components/site/Container'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { useAsync } from '@/lib/store'
 import { api } from '@/lib/api'
+import { useSeo } from '@/lib/seo'
+import { collectionSeo } from '@/lib/seoShared'
 
 export function CollectionPage() {
   const { handle = '' } = useParams()
   const { data, loading, error } = useAsync(() => api.collection(handle), [handle])
+
+  useSeo(
+    data
+      ? collectionSeo({
+          handle: data.collection.handle,
+          title: data.collection.title,
+          description: data.collection.description,
+          image: data.products[0]?.images[0],
+        })
+      : null,
+  )
 
   return (
     <>

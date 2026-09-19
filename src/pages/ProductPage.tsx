@@ -12,6 +12,8 @@ import { api } from '@/lib/api'
 import { useCart } from '@/lib/cart'
 import { cn, formatMoney } from '@/lib/utils'
 import type { Product } from '@/lib/types'
+import { useSeo } from '@/lib/seo'
+import { productSeo } from '@/lib/seoShared'
 
 export function ProductPage() {
   const { handle = '' } = useParams()
@@ -20,6 +22,22 @@ export function ProductPage() {
   const { data: product, loading, error } = useAsync(() => api.product(handle), [handle])
   const all = useAsync(loadProducts, [])
   const config = useAsync(loadConfig, [])
+
+  useSeo(
+    product
+      ? productSeo({
+          handle: product.handle,
+          title: product.title,
+          description: product.description,
+          images: product.images,
+          sku: product.variants[0]?.sku ?? null,
+          lowCents: product.priceFromCents,
+          highCents: Math.max(...product.variants.map((v) => v.priceCents), product.priceFromCents),
+          offerCount: product.variants.length,
+          available: product.variants.some((v) => v.available),
+        })
+      : null,
+  )
 
   const [variantId, setVariantId] = useState<number | null>(null)
   const [activeImage, setActiveImage] = useState(0)

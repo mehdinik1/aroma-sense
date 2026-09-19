@@ -1,13 +1,17 @@
-# Separate config for the frontend static deploy — kept apart from wrangler.toml (the API
-# Worker's config) so `wrangler deploy -c wrangler.pages.toml` never picks up `main` /
-# server/worker.ts. Deploy with: npm run deploy:pages
+# Frontend Worker: static site + SEO head injection (server/seo-worker.ts). Kept apart from
+# wrangler.toml (the API Worker's config) so `wrangler deploy -c wrangler.pages.toml` never
+# picks up the API's `main`. Deploy with: npm run deploy:pages
 
 name = "aroma-sense"
+main = "server/seo-worker.ts"
 compatibility_date = "2026-09-01"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+# Only page navigations run the Worker; static files (JS/CSS/images/robots/sitemap) skip it.
+run_worker_first = ["/*", "!/assets/*", "!/art/*", "!/blog-art/*", "!/brand/*", "!/products/*/*", "!/favicon.svg", "!/robots.txt", "!/sitemap.xml"]
 
 [[routes]]
 pattern = "vitamincshower.com"

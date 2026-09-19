@@ -3,10 +3,14 @@ import { PageHero, Loading, ErrorState } from '@/components/site/PageHero'
 import { Container } from '@/components/site/Container'
 import { useAsync } from '@/lib/store'
 import { api } from '@/lib/api'
+import { useSeo } from '@/lib/seo'
+import { cmsSeo, stripHtml } from '@/lib/seoShared'
 
 export function CmsPage() {
   const { slug = '' } = useParams()
   const { data, loading, error } = useAsync(() => api.page(slug), [slug])
+
+  useSeo(data ? cmsSeo({ slug, title: data.title, description: stripHtml(data.bodyHtml) }) : null)
 
   if (loading) return <Loading />
   if (error || !data) return <ErrorState message="This page could not be found." />

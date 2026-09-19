@@ -5,10 +5,25 @@ import { Container } from '@/components/site/Container'
 import { useAsync } from '@/lib/store'
 import { api } from '@/lib/api'
 import { formatDate } from '@/lib/utils'
+import { useSeo } from '@/lib/seo'
+import { articleSeo, stripHtml } from '@/lib/seoShared'
 
 export function BlogPost() {
   const { handle = '' } = useParams()
   const { data, loading, error } = useAsync(() => api.article(handle), [handle])
+
+  useSeo(
+    data
+      ? articleSeo({
+          handle: data.handle,
+          title: data.title,
+          description: data.excerpt || stripHtml(data.bodyHtml),
+          image: data.image,
+          author: data.author,
+          publishedAt: data.publishedAt,
+        })
+      : null,
+  )
 
   if (loading) return <Loading />
   if (error || !data) return <ErrorState message="This article could not be found." />
