@@ -113,6 +113,12 @@ export default {
       return Response.redirect(SITE_URL + url.pathname + url.search, 301)
     }
 
+    // product feed for Google Merchant Center, generated live by the API Worker
+    if (url.pathname === '/feeds/google-products.xml') {
+      const upstream = await fetch('https://api.vitamincshower.com/api/feeds/google-products.xml')
+      return new Response(upstream.body, { status: upstream.status, headers: upstream.headers })
+    }
+
     const last = url.pathname.split('/').pop() ?? ''
     if (last.includes('.')) return env.ASSETS.fetch(request) // files: pass straight through (missing ones 404)
 
