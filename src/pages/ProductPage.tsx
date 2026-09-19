@@ -29,7 +29,7 @@ export function ProductPage() {
       ? productSeo({
           handle: product.handle,
           title: product.title,
-          description: product.description,
+          description: product.metaDescription || product.description,
           images: product.images,
           sku: product.variants[0]?.sku ?? null,
           lowCents: product.priceFromCents,
@@ -96,7 +96,9 @@ export function ProductPage() {
             {product.images[activeImage] ? (
               <img
                 src={product.images[activeImage]}
-                alt={product.title}
+                alt={activeImage === 0 ? product.title : `${product.title} — photo ${activeImage + 1} of ${product.images.length}`}
+                fetchPriority={activeImage === 0 ? 'high' : undefined}
+                decoding="async"
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -116,7 +118,13 @@ export function ProductPage() {
                     i === activeImage ? 'border-primary' : 'border-border hover:border-primary/50',
                   )}
                 >
-                  <img src={src} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={src}
+                    alt={`${product.title} — view ${i + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
                 </button>
               ))}
             </div>

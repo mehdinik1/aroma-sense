@@ -22,6 +22,7 @@ export type ApiProduct = {
   handle: string
   title: string
   description: string
+  metaDescription?: string
   bodyHtml: string
   vendor: string
   productType: string
@@ -61,6 +62,7 @@ function applyOverride(p: RawProduct, o: Override | undefined): ApiProduct {
     handle: p.handle,
     title: p.title,
     description: p.description,
+    metaDescription: p.metaDescription,
     bodyHtml: p.bodyHtml,
     vendor: p.vendor,
     productType: p.productType,

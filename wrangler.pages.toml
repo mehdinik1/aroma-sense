@@ -9,7 +9,9 @@ compatibility_date = "2026-09-01"
 [assets]
 directory = "./dist"
 binding = "ASSETS"
-not_found_handling = "single-page-application"
+# The Worker serves the app shell for every page URL itself, so the platform-level SPA fallback
+# is off: a missing file (e.g. an old image URL) must answer 404, not 200 + HTML.
+not_found_handling = "none"
 # Only page navigations run the Worker; static files (JS/CSS/images/robots/sitemap) skip it.
 run_worker_first = ["/*", "!/assets/*", "!/art/*", "!/blog-art/*", "!/brand/*", "!/products/*/*", "!/favicon.svg", "!/robots.txt", "!/sitemap.xml"]
 

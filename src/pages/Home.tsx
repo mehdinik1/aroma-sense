@@ -74,7 +74,7 @@ export function Home() {
           <Reveal delay={120} className="relative hidden lg:block">
             <div className="photo-tile relative ml-auto aspect-[4/5] max-w-sm overflow-hidden rounded-lg border border-primary/30 shadow-2xl shadow-black/50">
               <img
-                src="/products/as-luxe/0.png"
+                src="/products/as-luxe/0.jpg"
                 alt="Aroma Sense Luxe Handheld Vitamin C Shower Head"
                 className="h-full w-full object-cover"
               />
@@ -193,6 +193,8 @@ export function Home() {
                     <img
                       src={r.image}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                     />
                     <span className="absolute left-4 top-3 font-display text-3xl italic text-[#f0dcae] drop-shadow">
@@ -263,6 +265,8 @@ export function Home() {
                 <img
                   src={g.src}
                   alt={g.caption}
+                  loading="lazy"
+                  decoding="async"
                   className={`w-full object-cover transition duration-700 group-hover:scale-105 ${
                     i === 0 ? 'aspect-square lg:aspect-[4/5]' : 'aspect-square'
                   }`}
@@ -294,6 +298,8 @@ export function Home() {
                       <img
                         src={a.image}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                       />
                     </div>

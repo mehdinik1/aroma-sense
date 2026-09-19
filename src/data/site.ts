@@ -63,7 +63,7 @@ export const nav: NavItem[] = [
       },
     ],
     feature: {
-      image: '/products/as-luxe/0.png',
+      image: '/products/as-luxe/0.jpg',
       eyebrow: 'Bestseller',
       title: 'Luxe Handheld Vitamin C Shower Head',
       to: '/products/as-luxe',

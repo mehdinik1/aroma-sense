@@ -28,6 +28,7 @@ export type RawProduct = {
   handle: string
   title: string
   description: string
+  metaDescription?: string
   bodyHtml: string
   vendor: string
   productType: string

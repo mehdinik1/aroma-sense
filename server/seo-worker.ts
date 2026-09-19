@@ -114,7 +114,7 @@ export default {
     }
 
     const last = url.pathname.split('/').pop() ?? ''
-    if (last.includes('.')) return env.ASSETS.fetch(request) // files: pass straight through
+    if (last.includes('.')) return env.ASSETS.fetch(request) // files: pass straight through (missing ones 404)
 
     const resolved = resolve(url.pathname)
     // always serve the app shell (crawlers don't send the navigation headers SPA fallback keys on)

@@ -45,6 +45,8 @@ export function BlogPost() {
           <img
             src={data.image}
             alt=""
+            fetchPriority="high"
+            decoding="async"
             className="mx-auto mb-10 max-h-[420px] w-full max-w-2xl rounded-2xl object-cover"
           />
         )}
