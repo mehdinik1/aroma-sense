@@ -12,6 +12,7 @@ import { topicLabel } from '@/lib/contactTopics'
 import type {
   AdminCustomer,
   AdminCustomerDetail,
+  AdminReview,
   ContactMessage,
   DiscountCode,
   NewsletterSubscriber,
@@ -19,7 +20,7 @@ import type {
   Product,
 } from '@/lib/types'
 
-type Tab = 'overview' | 'orders' | 'products' | 'customers' | 'discounts' | 'messages' | 'settings'
+type Tab = 'overview' | 'orders' | 'products' | 'customers' | 'discounts' | 'reviews' | 'messages' | 'settings'
 
 export function AdminDashboard() {
   const navigate = useNavigate()
@@ -64,7 +65,7 @@ export function AdminDashboard() {
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         <nav className="mb-6 flex flex-wrap gap-1 border-b border-border">
-          {(['overview', 'orders', 'products', 'customers', 'discounts', 'messages', 'settings'] as Tab[]).map((t) => (
+          {(['overview', 'orders', 'products', 'customers', 'discounts', 'reviews', 'messages', 'settings'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -85,6 +86,7 @@ export function AdminDashboard() {
         {tab === 'products' && <Products />}
         {tab === 'customers' && <Customers />}
         {tab === 'discounts' && <Discounts />}
+        {tab === 'reviews' && <Reviews />}
         {tab === 'messages' && <Messages />}
         {tab === 'settings' && <Settings />}
       </div>
@@ -919,5 +921,80 @@ function Settings() {
         {saving ? 'Updating…' : 'Update password'}
       </Button>
     </form>
+  )
+}
+
+function Reviews() {
+  const [rows, setRows] = useState<AdminReview[] | null>(null)
+  const load = () => api.admin.reviews().then(setRows)
+  useEffect(() => {
+    load()
+  }, [])
+
+  async function set(id: number, status: 'pending' | 'approved' | 'rejected') {
+    await api.admin.moderateReview(id, status)
+    invalidateStore()
+    load()
+  }
+  async function remove(id: number) {
+    if (!window.confirm('Delete this review permanently?')) return
+    await api.admin.deleteReview(id)
+    load()
+  }
+
+  if (!rows) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (!rows.length)
+    return (
+      <p className="text-sm text-muted-foreground">
+        No reviews yet. Buyers get a review request email 14 days after you mark their order Fulfilled. Reviews appear here for approval.
+      </p>
+    )
+  const pending = rows.filter((r) => r.status === 'pending').length
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        {pending} awaiting approval · {rows.length} total. Nothing appears on the site until you approve it.
+      </p>
+      {rows.map((r) => (
+        <div key={r.id} className={cn('rounded-2xl border border-border bg-background p-5', r.status === 'pending' && 'border-l-4 border-l-primary')}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm">
+              <span className="font-medium">{r.product}</span>{' '}
+              <span className="text-primary">{'★'.repeat(r.rating)}<span className="text-border">{'★'.repeat(5 - r.rating)}</span></span>
+            </div>
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                r.status === 'approved' && 'bg-emerald-500/15 text-emerald-300',
+                r.status === 'pending' && 'bg-primary text-primary-foreground',
+                r.status === 'rejected' && 'bg-secondary text-muted-foreground',
+              )}
+            >
+              {r.status}
+            </span>
+          </div>
+          {r.title && <p className="mt-2 text-sm font-semibold">{r.title}</p>}
+          <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{r.body}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {r.name} · {r.email ?? 'no email'} · order {r.orderReference} · {formatDate(r.createdAt.replace(' ', 'T') + 'Z')}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            {r.status !== 'approved' && (
+              <button onClick={() => set(r.id, 'approved')} className="rounded-full bg-primary px-3 py-1 font-semibold text-primary-foreground">
+                Approve
+              </button>
+            )}
+            {r.status !== 'rejected' && (
+              <button onClick={() => set(r.id, 'rejected')} className="rounded-full border border-border px-3 py-1 hover:bg-secondary">
+                Reject
+              </button>
+            )}
+            <button onClick={() => remove(r.id)} className="rounded-full border border-border px-3 py-1 text-red-400 hover:bg-secondary">
+              Delete
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

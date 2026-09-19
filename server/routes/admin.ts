@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
-import { db } from '../db.ts'
+import { db, productByHandle } from '../db.ts'
 import { getProduct, listProducts } from '../catalog.ts'
 import { clearSession, currentAdmin, issueSession, requireAdmin } from '../auth.ts'
 import type { OrderItem } from '../../src/lib/types.ts'
@@ -163,6 +163,7 @@ adminRouter.patch('/orders/:id', async (req, res) => {
   }
   const { status, trackingNumber } = parsed.data
   if (status) await db.prepare('UPDATE orders SET status = ? WHERE id = ?').bind(status, id).run()
+  if (status === 'fulfilled') await db.prepare("UPDATE orders SET fulfilled_at = COALESCE(fulfilled_at, datetime('now')) WHERE id = ?").bind(id).run()
   if (trackingNumber !== undefined) await db.prepare('UPDATE orders SET tracking_number = ? WHERE id = ?').bind(trackingNumber || null, id).run()
   const updated = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first<Record<string, unknown>>()
 
@@ -401,4 +402,47 @@ adminRouter.patch('/contact-messages/:id', async (req, res) => {
     handled: r!.handled,
     createdAt: r!.created_at,
   })
+})
+
+adminRouter.get('/reviews', async (_req, res) => {
+  const { results } = await db
+    .prepare(
+      `SELECT r.id, r.product_handle, r.rating, r.title, r.body, r.name, r.status, r.created_at, o.reference, o.email
+         FROM reviews r JOIN orders o ON o.id = r.order_id
+        ORDER BY CASE r.status WHEN 'pending' THEN 0 ELSE 1 END, r.id DESC`,
+    )
+    .all<Record<string, unknown>>()
+  res.json(
+    results.map((r) => ({
+      id: r.id,
+      handle: r.product_handle,
+      product: productByHandle.get(r.product_handle as string)?.title ?? r.product_handle,
+      rating: r.rating,
+      title: r.title,
+      body: r.body,
+      name: r.name,
+      status: r.status,
+      createdAt: r.created_at,
+      orderReference: r.reference,
+      email: r.email,
+    })),
+  )
+})
+
+adminRouter.patch('/reviews/:id', async (req, res) => {
+  const parsed = z.object({ status: z.enum(['pending', 'approved', 'rejected']) }).safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid values.' })
+    return
+  }
+  await db
+    .prepare("UPDATE reviews SET status = ?, moderated_at = datetime('now') WHERE id = ?")
+    .bind(parsed.data.status, Number(req.params.id))
+    .run()
+  res.json({ ok: true })
+})
+
+adminRouter.delete('/reviews/:id', async (req, res) => {
+  await db.prepare('DELETE FROM reviews WHERE id = ?').bind(Number(req.params.id)).run()
+  res.json({ ok: true })
 })

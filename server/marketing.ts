@@ -2,17 +2,28 @@ import { env } from './env.ts'
 
 const hex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
 
-async function sign(email: string) {
+async function hmacHex(message: string) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.jwtSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-  return hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode('unsubscribe:' + email.toLowerCase())))
+  return hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message)))
+}
+
+const sign = (email: string) => hmacHex('unsubscribe:' + email.toLowerCase())
+
+function safeEqual(a: string, b: string) {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i) // constant-time
+  return diff === 0
+}
+
+/** Private link token for "write a review" emails: proves the holder received it for this order. */
+export const reviewToken = (reference: string) => hmacHex('review:' + reference)
+export async function verifyReviewToken(reference: string, token: string) {
+  return safeEqual(await reviewToken(reference), token)
 }
 
 export async function verifyUnsubscribeToken(email: string, token: string) {
-  const expected = await sign(email)
-  if (token.length !== expected.length) return false
-  let diff = 0
-  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ token.charCodeAt(i) // constant-time
-  return diff === 0
+  return safeEqual(await sign(email), token)
 }
 
 /** Page a person opens from an email (asks them to confirm). */

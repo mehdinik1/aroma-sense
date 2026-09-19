@@ -367,3 +367,50 @@ export async function sendAbandonedCartEmail(o: {
     }),
   })
 }
+
+const stars = (n: number) => '&#9733;'.repeat(n) + '<span style="color:#d8d0bc">' + '&#9733;'.repeat(5 - n) + '</span>'
+
+/** Sent ~14 days after an order ships. A private link proves the holder bought it. */
+export async function sendReviewRequestEmail(o: {
+  email: string
+  name: string | null
+  reviewUrl: string
+  items: OrderEmailData['items']
+}): Promise<boolean> {
+  const firstName = o.name?.split(' ')[0]
+  const shown = o.items.slice(0, 3)
+  return send({
+    to: o.email,
+    replyTo: env.supportEmail,
+    subject: 'How is your Aroma Sense order?',
+    headers: { 'List-Unsubscribe': `<${await unsubscribeApiUrl(o.email)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+    html: layout({
+      preheader: 'Tell other shoppers what you think. It takes about a minute.',
+      eyebrow: 'Your feedback',
+      title: `How is it going${firstName ? ', ' + esc(firstName) : ''}?`,
+      unsubscribeUrl: await unsubscribePageUrl(o.email),
+      footerNote: 'You received this because you recently bought from vitamincshower.com.',
+      body:
+        p(`Thanks again for your order. If you have a minute, an honest review helps other shoppers choose, and helps us make things better.`) +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 4px">${itemRows(shown)}</table>` +
+        button(o.reviewUrl, 'Write a review') +
+        small(`Reviews are checked before they appear. Something not right with your order? Reply to this email and we'll help first.`),
+    }),
+  })
+}
+
+export async function sendReviewAlert(r: { product: string; rating: number; name: string; body: string }) {
+  await send({
+    to: env.adminNotifyEmail,
+    subject: `New review to approve: ${r.rating}/5 for ${r.product}`,
+    html: layout({
+      preheader: r.body.slice(0, 90),
+      eyebrow: 'Store alert',
+      title: 'New review awaiting approval',
+      body:
+        panel(`${label('Product')}<strong style="color:${INK}">${esc(r.product)}</strong><div style="height:8px"></div>${label('Rating')}<span style="color:${GOLD_DEEP};font-size:18px">${stars(r.rating)}</span><div style="height:8px"></div>${label('From')}${esc(r.name)}`) +
+        `<div style="font-size:15px;line-height:1.7;white-space:pre-wrap;border-left:3px solid ${GOLD};padding:2px 0 2px 16px;color:${INK}">${esc(r.body)}</div>` +
+        button(env.appUrl + '/admin', 'Review in admin'),
+    }),
+  })
+}

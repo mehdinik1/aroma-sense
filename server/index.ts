@@ -7,6 +7,7 @@ import { jsonBody } from './bodyParser.ts'
 import { webhookRouter } from './routes/webhook.ts'
 import { publicRouter } from './routes/public.ts'
 import { feedsRouter } from './routes/feeds.ts'
+import { reviewsRouter } from './routes/reviews.ts'
 import { unsubscribeRouter } from './routes/unsubscribe.ts'
 import { checkoutRouter } from './routes/checkout.ts'
 import { adminRouter } from './routes/admin.ts'
@@ -39,6 +40,7 @@ app.use(cookieParser())
 
 app.use('/api', publicRouter)
 app.use('/api', feedsRouter)
+app.use('/api', reviewsRouter)
 app.use('/api', checkoutRouter)
 app.use('/api/account', accountRouter)
 app.use('/api/admin', adminRouter)

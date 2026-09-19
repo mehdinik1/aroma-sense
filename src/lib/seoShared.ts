@@ -70,7 +70,7 @@ export const STATIC_SEO: Record<string, StaticSeo> = {
 
 // Private / transactional areas: never indexed.
 // /deal-of-the-month is a client-side redirect to the current deal product
-export const NOINDEX_PREFIXES = ['/cart', '/checkout', '/account', '/admin', '/search', '/deal-of-the-month', '/unsubscribe']
+export const NOINDEX_PREFIXES = ['/cart', '/checkout', '/account', '/admin', '/search', '/deal-of-the-month', '/unsubscribe', '/review']
 
 export const normalizePath = (p: string) => (p.length > 1 ? p.replace(/\/+$/, '') : p) || '/'
 export const isNoindexPath = (p: string) => NOINDEX_PREFIXES.some((x) => p === x || p.startsWith(x + '/'))
@@ -153,6 +153,11 @@ export type ProductSeoData = {
   highCents: number
   offerCount: number
   available: boolean
+  reviews?: {
+    count: number
+    average: number
+    items: { author: string; rating: number; title: string | null; body: string; date: string }[]
+  }
 }
 
 export function productSeo(p: ProductSeoData): SeoInput {
@@ -197,6 +202,26 @@ export function productSeo(p: ProductSeoData): SeoInput {
         ...(p.sku ? { sku: p.sku } : {}),
         brand: { '@type': 'Brand', name: SITE_NAME },
         offers,
+        // rating markup only exists when real, approved reviews do
+        ...(p.reviews && p.reviews.count > 0
+          ? {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: p.reviews.average,
+                reviewCount: p.reviews.count,
+                bestRating: 5,
+                worstRating: 1,
+              },
+              review: p.reviews.items.map((r) => ({
+                '@type': 'Review',
+                reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+                author: { '@type': 'Person', name: r.author },
+                datePublished: r.date,
+                ...(r.title ? { name: r.title } : {}),
+                reviewBody: r.body,
+              })),
+            }
+          : {}),
       },
       breadcrumbLd([
         { name: 'Home', path: '/' },

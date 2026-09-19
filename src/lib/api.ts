@@ -16,8 +16,7 @@ import type {
   Product,
   RewardsInfo,
   StoreConfig,
-  Subscription,
-} from './types'
+  Subscription, AdminReview, ProductReviews, ReviewOrder, ReviewSummary } from './types'
 
 // Pages (this frontend) and the Cloudflare Worker (the API) are always different origins —
 // set at build time via `VITE_API_URL` (e.g. https://aroma-sense-api.<you>.workers.dev/api).
@@ -67,6 +66,12 @@ export const api = {
     website?: string
   }) =>
     req<{ ok: true }>('/contact', { method: 'POST', body: JSON.stringify(body) }),
+  reviews: (handle: string) => req<ProductReviews>(`/products/${encodeURIComponent(handle)}/reviews`),
+  reviewSummaries: () => req<Record<string, ReviewSummary>>('/reviews/summaries'),
+  reviewOrder: (ref: string, token: string) =>
+    req<ReviewOrder>(`/review-order?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(token)}`),
+  submitReview: (ref: string, token: string, body: { handle: string; rating: number; title?: string; body: string; name: string }) =>
+    req<{ ok: true }>(`/reviews?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(token)}`, { method: 'POST', body: JSON.stringify(body) }),
   unsubscribe: (email: string, token: string) =>
     req<{ ok: true }>(`/unsubscribe?e=${encodeURIComponent(email)}&t=${encodeURIComponent(token)}`, { method: 'POST' }),
   checkout: (
@@ -155,6 +160,10 @@ export const api = {
     orders: () => req<Order[]>('/admin/orders'),
     updateOrder: (id: number, patch: Partial<{ status: string; trackingNumber: string }>) =>
       req<Order>(`/admin/orders/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+    reviews: () => req<AdminReview[]>('/admin/reviews'),
+    moderateReview: (id: number, status: 'pending' | 'approved' | 'rejected') =>
+      req<{ ok: true }>(`/admin/reviews/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    deleteReview: (id: number) => req<{ ok: true }>(`/admin/reviews/${id}`, { method: 'DELETE' }),
     messages: () => req<ContactMessage[]>('/admin/contact-messages'),
     markMessage: (id: number, handled: boolean) =>
       req<ContactMessage>(`/admin/contact-messages/${id}`, { method: 'PATCH', body: JSON.stringify({ handled }) }),

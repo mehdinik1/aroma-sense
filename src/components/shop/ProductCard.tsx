@@ -3,10 +3,14 @@ import { RefreshCw } from 'lucide-react'
 import type { Product } from '@/lib/types'
 import { formatMoney } from '@/lib/utils'
 import { WishlistButton } from './WishlistButton'
+import { Stars } from './Stars'
+import { loadReviewSummaries, useAsync } from '@/lib/store'
 
 const SUBSCRIBABLE = new Set(['Vitamin C Cartridges', 'Microfiber filters'])
 
 export function ProductCard({ product }: { product: Product }) {
+  const summaries = useAsync(loadReviewSummaries, []).data
+  const rating = summaries?.[product.handle]
   const onSale = product.compareAtCents > product.priceFromCents
   const multiPrice = product.variants.length > 1
   const off = onSale
@@ -57,6 +61,12 @@ export function ProductCard({ product }: { product: Product }) {
         <h3 className="font-display text-base leading-snug text-foreground transition-colors group-hover:text-primary">
           {product.title}
         </h3>
+        {rating && rating.count > 0 && (
+          <div className="flex items-center gap-1.5 pt-0.5">
+            <Stars value={rating.average} size={13} />
+            <span className="text-[11px] text-muted-foreground">({rating.count})</span>
+          </div>
+        )}
         <div className="mt-auto flex items-center gap-2 pt-2">
           <span className="text-sm font-semibold text-primary">
             {multiPrice && <span className="text-muted-foreground">From </span>}

@@ -13,6 +13,8 @@ import { useCart } from '@/lib/cart'
 import { cn, formatMoney } from '@/lib/utils'
 import type { Product } from '@/lib/types'
 import { useSeo } from '@/lib/seo'
+import { Stars } from '@/components/shop/Stars'
+import { ReviewsSection } from '@/components/shop/ReviewsSection'
 import { itemsValue, productToItem, track } from '@/lib/analytics'
 import { productSeo } from '@/lib/seoShared'
 
@@ -22,6 +24,7 @@ export function ProductPage() {
   const { add } = useCart()
   const { data: product, loading, error } = useAsync(() => api.product(handle), [handle])
   const all = useAsync(loadProducts, [])
+  const reviews = useAsync(() => api.reviews(handle), [handle]).data
   const config = useAsync(loadConfig, [])
 
   useSeo(
@@ -36,6 +39,14 @@ export function ProductPage() {
           highCents: Math.max(...product.variants.map((v) => v.priceCents), product.priceFromCents),
           offerCount: product.variants.length,
           available: product.variants.some((v) => v.available),
+          reviews:
+            reviews && reviews.summary.count > 0
+              ? {
+                  count: reviews.summary.count,
+                  average: reviews.summary.average,
+                  items: reviews.reviews.slice(0, 5).map((r) => ({ author: r.name, rating: r.rating, title: r.title, body: r.body, date: r.createdAt.slice(0, 10) })),
+                }
+              : undefined,
         })
       : null,
   )
@@ -134,6 +145,14 @@ export function ProductPage() {
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">{product.productType}</p>
           <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">{product.title}</h1>
+          {reviews && reviews.summary.count > 0 && (
+            <a href="#reviews" className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+              <Stars value={reviews.summary.average} size={16} />
+              <span>
+                {reviews.summary.average.toFixed(1)} ({reviews.summary.count} review{reviews.summary.count === 1 ? '' : 's'})
+              </span>
+            </a>
+          )}
 
           <div className="mt-4 flex items-center gap-3">
             <span className="text-2xl font-semibold">{formatMoney(effectivePrice)}</span>
@@ -248,6 +267,8 @@ export function ProductPage() {
           )}
         </div>
       </div>
+
+      {reviews && <ReviewsSection data={reviews} />}
 
       {related.length > 0 && (
         <div className="mt-16">

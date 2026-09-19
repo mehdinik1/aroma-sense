@@ -18,7 +18,7 @@ import {
 } from '../src/lib/seoShared.ts'
 import { consentRequired } from '../src/lib/consentRegions.ts'
 
-type Env = { ASSETS: Fetcher }
+type Env = { ASSETS: Fetcher; API_BASE?: string }
 type Resolved = { status: number; seo: SeoInput; noindex: boolean }
 
 const notFound = (path: string): Resolved => ({
@@ -27,7 +27,9 @@ const notFound = (path: string): Resolved => ({
   seo: { title: `Page not found | ${SITE_NAME}`, description: 'This page could not be found.', path, noindex: true },
 })
 
-function resolve(rawPath: string): Resolved {
+type EdgeReviews = NonNullable<Parameters<typeof productSeo>[0]['reviews']>
+
+function resolve(rawPath: string, reviews?: EdgeReviews): Resolved {
   const path = normalizePath(rawPath)
   const s = staticSeo(path)
   if (s) return { status: 200, noindex: false, seo: s }
@@ -44,7 +46,7 @@ function resolve(rawPath: string): Resolved {
     return {
       status: 200,
       noindex: false,
-      seo: productSeo({ handle, title: p.t, description: p.d, images: p.i, sku: p.sku, lowCents: p.lo, highCents: p.hi, offerCount: p.n, available: p.a }),
+      seo: productSeo({ handle, title: p.t, description: p.d, images: p.i, sku: p.sku, lowCents: p.lo, highCents: p.hi, offerCount: p.n, available: p.a, reviews }),
     }
   }
   if (kind === 'collections') {
@@ -67,6 +69,26 @@ function resolve(rawPath: string): Resolved {
     return { status: 200, noindex: false, seo: cmsSeo({ slug: handle, title: p.t, description: p.d }) }
   }
   return notFound(path)
+}
+
+// Real, approved reviews for a product page (cached at the edge for 5 minutes). Any problem => no rating markup.
+async function edgeReviews(apiBase: string, handle: string): Promise<EdgeReviews | undefined> {
+  try {
+    const res = await fetch(`${apiBase}/api/products/${encodeURIComponent(handle)}/reviews?limit=5`, {
+      signal: AbortSignal.timeout(900),
+      cf: { cacheTtl: 300, cacheEverything: true },
+    } as RequestInit)
+    if (!res.ok) return undefined
+    const d = (await res.json()) as { summary: { count: number; average: number }; reviews: { name: string; rating: number; title: string | null; body: string; createdAt: string }[] }
+    if (!d.summary.count) return undefined
+    return {
+      count: d.summary.count,
+      average: d.summary.average,
+      items: d.reviews.map((r) => ({ author: r.name, rating: r.rating, title: r.title, body: r.body, date: r.createdAt.slice(0, 10) })),
+    }
+  } catch {
+    return undefined
+  }
 }
 
 const attr = (name: string, value: string) => ({
@@ -125,7 +147,8 @@ export default {
     const last = url.pathname.split('/').pop() ?? ''
     if (last.includes('.')) return env.ASSETS.fetch(request) // files: pass straight through (missing ones 404)
 
-    const resolved = resolve(url.pathname)
+    const productMatch = /^\/products\/([^/]+)\/?$/.exec(url.pathname)
+    const resolved = resolve(url.pathname, productMatch ? await edgeReviews(env.API_BASE ?? 'https://api.vitamincshower.com', decodeURIComponent(productMatch[1])) : undefined)
     // always serve the app shell (crawlers don't send the navigation headers SPA fallback keys on)
     const shell = await env.ASSETS.fetch(new Request(new URL('/', url), { headers: request.headers }))
     const out = rewrite(shell, resolved, consentRequired(request.cf?.country, request.cf?.isEUCountry))

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api } from './api'
-import type { Collection, Product, StoreConfig } from './types'
+import type { Collection, Product, ReviewSummary, StoreConfig } from './types'
 
 let productsCache: Promise<Product[]> | null = null
 let collectionsCache: Promise<Collection[]> | null = null
 let configCache: Promise<StoreConfig> | null = null
+let reviewSummariesCache: Promise<Record<string, ReviewSummary>> | null = null
 
 export function loadProducts() {
   if (!productsCache) productsCache = api.products()
@@ -19,6 +20,11 @@ export function loadCollections() {
 export function loadConfig() {
   if (!configCache) configCache = api.config()
   return configCache
+}
+
+export function loadReviewSummaries() {
+  if (!reviewSummariesCache) reviewSummariesCache = api.reviewSummaries().catch(() => ({}))
+  return reviewSummariesCache
 }
 
 export function invalidateStore() {

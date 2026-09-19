@@ -30,6 +30,7 @@ import { AdminDashboard } from '@/pages/admin/AdminDashboard'
 import { AccountAuth } from '@/pages/account/AccountAuth'
 import { RouteSeo } from '@/lib/seo'
 import { Unsubscribe } from '@/pages/Unsubscribe'
+import { ReviewPage } from '@/pages/ReviewPage'
 import { ForgotPassword, ResetPassword } from '@/pages/account/PasswordReset'
 import { AccountLayout } from '@/pages/account/AccountLayout'
 import { AccountOverview } from '@/pages/account/AccountOverview'
@@ -76,6 +77,7 @@ export default function App() {
 
               <Route path="/account/login" element={<AccountAuth mode="login" />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
+              <Route path="/review" element={<ReviewPage />} />
               <Route path="/account/forgot" element={<ForgotPassword />} />
               <Route path="/account/reset" element={<ResetPassword />} />
               <Route path="/account/register" element={<AccountAuth mode="register" />} />

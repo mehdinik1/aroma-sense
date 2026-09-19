@@ -205,3 +205,25 @@ export type StoreConfig = {
     subscribableTypes: string[]
   }
 }
+
+export type Review = { id: number; rating: number; title: string | null; body: string; name: string; createdAt: string }
+export type ReviewSummary = { count: number; average: number }
+export type ProductReviews = { summary: ReviewSummary; reviews: Review[] }
+export type ReviewOrder = {
+  reference: string
+  suggestedName: string
+  items: { handle: string; title: string; image: string | null; reviewed: boolean }[]
+}
+export type AdminReview = {
+  id: number
+  handle: string
+  product: string
+  rating: number
+  title: string | null
+  body: string
+  name: string
+  status: 'pending' | 'approved' | 'rejected'
+  createdAt: string
+  orderReference: string
+  email: string | null
+}
