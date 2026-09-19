@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api } from './api'
+import { track } from './analytics'
 import type { Customer, RewardsInfo } from './types'
 
 type AccountState = {
@@ -49,6 +50,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (email: string, password: string, name: string) => {
       await api.account.register(email, password, name)
+      track('sign_up', { method: 'email' })
       await refresh()
     },
     [refresh],

@@ -32,8 +32,8 @@
         dataLayer.push(arguments)
       }
       gtag('js', new Date())
-      // keep the store owner's admin visits out of the visitor data
-      if (!location.pathname.startsWith('/admin')) gtag('config', 'G-48XZWER4VB')
+      // report only from the live site (never localhost/dev) and keep admin visits out of the data
+      if (location.hostname === 'vitamincshower.com' && !location.pathname.startsWith('/admin')) gtag('config', 'G-48XZWER4VB')
     </script>
   </head>
   <body>

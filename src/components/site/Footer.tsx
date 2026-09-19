@@ -5,6 +5,7 @@ import { Container } from './Container'
 import { Logo } from './Logo'
 import { site } from '@/data/site'
 import { api, ApiError } from '@/lib/api'
+import { track } from '@/lib/analytics'
 import { useAsync, loadConfig } from '@/lib/store'
 
 const iconProps = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'currentColor' as const }
@@ -71,6 +72,7 @@ function NewsletterSignup() {
     setError(null)
     try {
       const r = await api.newsletter(email)
+      track('generate_lead', { method: 'newsletter' })
       setResult({ code: r.code, percentOff: r.percentOff })
       setEmail('')
     } catch (err) {

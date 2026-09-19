@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Product, Variant } from './types'
+import { itemsValue, lineToItem, productToItem, track } from './analytics'
 
 export type CartLine = {
   variantId: number
@@ -142,11 +143,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
       hasSubscription: subCount > 0,
       allSubscription: state.lines.length > 0 && subCount === state.lines.length,
       mixed: subCount > 0 && subCount < state.lines.length,
-      add: (product, variant, quantity = 1, subscribe = false) =>
-        dispatch({ type: 'add', product, variant, quantity, subscribe }),
+      add: (product, variant, quantity = 1, subscribe = false) => {
+        const item = productToItem(product, variant, quantity)
+        track('add_to_cart', { currency: 'USD', value: itemsValue([item]), items: [item] })
+        dispatch({ type: 'add', product, variant, quantity, subscribe })
+      },
       setQty: (variantId, quantity) => dispatch({ type: 'setQty', variantId, quantity }),
       setSubscribe: (variantId, subscribe) => dispatch({ type: 'setSubscribe', variantId, subscribe }),
-      remove: (variantId) => dispatch({ type: 'remove', variantId }),
+      remove: (variantId) => {
+        const line = state.lines.find((l) => l.variantId === variantId)
+        if (line) {
+          const item = lineToItem(line)
+          track('remove_from_cart', { currency: 'USD', value: itemsValue([item]), items: [item] })
+        }
+        dispatch({ type: 'remove', variantId })
+      },
       clear: () => dispatch({ type: 'clear' }),
     }
   }, [state.lines])

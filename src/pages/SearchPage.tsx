@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Search as SearchIcon } from 'lucide-react'
 import { PageHero, Loading, ErrorState } from '@/components/site/PageHero'
@@ -6,11 +6,19 @@ import { Container } from '@/components/site/Container'
 import { Input } from '@/components/ui/field'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { useAsync, loadProducts } from '@/lib/store'
+import { track } from '@/lib/analytics'
 
 export function SearchPage() {
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
   const { data, loading, error } = useAsync(loadProducts, [])
+
+  useEffect(() => {
+    const term = q.trim()
+    if (term.length < 2) return
+    const t = setTimeout(() => track('search', { search_term: term }), 1000)
+    return () => clearTimeout(t)
+  }, [q])
 
   const results = useMemo(() => {
     const term = q.trim().toLowerCase()

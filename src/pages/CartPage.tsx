@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Minus, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { Container } from '@/components/site/Container'
@@ -8,6 +8,7 @@ import { useCart } from '@/lib/cart'
 import { useAccount } from '@/lib/account'
 import { api, ApiError } from '@/lib/api'
 import { loadConfig } from '@/lib/store'
+import { itemsValue, lineToItem, saveCheckoutSnapshot, track } from '@/lib/analytics'
 import { cn, formatMoney } from '@/lib/utils'
 import type { StoreConfig } from '@/lib/types'
 
@@ -77,6 +78,14 @@ export function CartPage() {
     setCodeChecking(false)
   }
 
+  const viewedCart = useRef(false)
+  useEffect(() => {
+    if (viewedCart.current || !lines.length) return
+    viewedCart.current = true
+    const items = lines.map(lineToItem)
+    track('view_cart', { currency: 'USD', value: itemsValue(items), items })
+  }, [lines])
+
   async function checkout() {
     setError(null)
     setLoading(true)
@@ -85,6 +94,9 @@ export function CartPage() {
         lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity, subscribe: l.subscribe })),
         { pointsToRedeem: allSubscription ? 0 : redeem, discountCode: appliedCode?.code },
       )
+      const items = lines.map(lineToItem)
+      track('begin_checkout', { currency: 'USD', value: total / 100, items, ...(appliedCode ? { coupon: appliedCode.code } : {}) })
+      saveCheckoutSnapshot({ items, value: total / 100, coupon: appliedCode?.code })
       window.location.href = url
     } catch (err) {
       if (err instanceof ApiError && err.code === 'auth_required') {

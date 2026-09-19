@@ -13,6 +13,7 @@ import { useCart } from '@/lib/cart'
 import { cn, formatMoney } from '@/lib/utils'
 import type { Product } from '@/lib/types'
 import { useSeo } from '@/lib/seo'
+import { itemsValue, productToItem, track } from '@/lib/analytics'
 import { productSeo } from '@/lib/seoShared'
 
 export function ProductPage() {
@@ -38,6 +39,12 @@ export function ProductPage() {
         })
       : null,
   )
+
+  useEffect(() => {
+    if (!product) return
+    const item = productToItem(product, product.variants[0])
+    track('view_item', { currency: 'USD', value: itemsValue([item]), items: [item] })
+  }, [product])
 
   const [variantId, setVariantId] = useState<number | null>(null)
   const [activeImage, setActiveImage] = useState(0)

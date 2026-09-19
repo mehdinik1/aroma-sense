@@ -4,6 +4,7 @@ import { CheckCircle2 } from 'lucide-react'
 import { Container } from '@/components/site/Container'
 import { useCart } from '@/lib/cart'
 import { useAccount } from '@/lib/account'
+import { trackPurchaseOnce } from '@/lib/analytics'
 
 export function CheckoutSuccess() {
   const { clear } = useCart()
@@ -13,8 +14,9 @@ export function CheckoutSuccess() {
   const [refreshed, setRefreshed] = useState(false)
 
   useEffect(() => {
+    if (ref) trackPurchaseOnce(ref)
     clear()
-  }, [clear])
+  }, [clear, ref])
 
   // give the webhook a moment, then pull the updated points balance
   useEffect(() => {
