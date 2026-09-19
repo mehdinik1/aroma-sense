@@ -115,6 +115,7 @@ export type OrderEmailData = {
   shippingAddress: string | null
   totalCents: number
   shippingCents: number
+  taxCents?: number
   pointsEarned: number
   items: {
     title: string
@@ -143,12 +144,14 @@ function itemRows(items: OrderEmailData['items']) {
 
 function itemsBlock(o: OrderEmailData) {
   const rows = itemRows(o.items)
-  const subtotal = o.totalCents - o.shippingCents
+  const tax = o.taxCents ?? 0
+  const subtotal = o.totalCents - o.shippingCents - tax
   return (
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 4px">${rows}</table>` +
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px">` +
     `<tr><td style="padding:10px 0 2px;color:${MUTED}">Subtotal (after any discounts)</td><td align="right" style="padding:10px 0 2px">${money(subtotal)}</td></tr>` +
     `<tr><td style="padding:2px 0;color:${MUTED}">Shipping</td><td align="right">${o.shippingCents ? money(o.shippingCents) : 'Free'}</td></tr>` +
+    (tax ? `<tr><td style="padding:2px 0;color:${MUTED}">Tax</td><td align="right">${money(tax)}</td></tr>` : '') +
     `<tr><td style="padding:12px 0 0;font-family:${SERIF};font-size:18px;color:${INK}">Total</td><td align="right" style="padding:12px 0 0;font-family:${SERIF};font-size:18px;color:${INK}">${money(o.totalCents)}</td></tr></table>`
   )
 }

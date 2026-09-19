@@ -93,7 +93,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
       .prepare(
         `UPDATE orders
            SET status = 'paid', email = ?, customer_name = ?, shipping_address = ?,
-               shipping_cents = ?, total_cents = ?, points_earned = ?
+               shipping_cents = ?, tax_cents = ?, total_cents = ?, points_earned = ?
          WHERE id = ?`,
       )
       .bind(
@@ -101,6 +101,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
         session.customer_details?.name ?? null,
         shippingAddress,
         session.total_details?.amount_shipping ?? 0,
+        session.total_details?.amount_tax ?? 0,
         session.amount_total ?? order.subtotal_cents,
         pointsEarned,
         order.id,
@@ -156,6 +157,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     shippingAddress,
     totalCents: session.amount_total ?? order.subtotal_cents,
     shippingCents: session.total_details?.amount_shipping ?? 0,
+    taxCents: session.total_details?.amount_tax ?? 0,
     pointsEarned,
     items,
   })

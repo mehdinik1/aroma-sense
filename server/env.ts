@@ -26,6 +26,9 @@ export const env = {
   apiUrl: process.env.API_URL || 'https://api.vitamincshower.com',
   businessName: process.env.BUSINESS_NAME || 'Aroma Sense',
   mailingAddress: process.env.MAILING_ADDRESS || '',
+  // Stripe Tax at checkout. OFF until Stripe Tax is set up in the Dashboard (head office address +
+  // registrations); Stripe only collects tax in places you are actively registered.
+  stripeTax: ['1', 'true', 'on'].includes((process.env.STRIPE_TAX || '').toLowerCase()),
   isProd: process.env.NODE_ENV === 'production',
 }
 

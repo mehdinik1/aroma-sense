@@ -69,6 +69,7 @@ export type Order = {
   shippingAddress: string | null
   subtotalCents: number
   shippingCents: number
+  taxCents?: number
   totalCents: number
   trackingNumber: string | null
   stripeSessionId: string | null
@@ -140,6 +141,7 @@ export type AccountOrder = {
   createdAt: string
   subtotalCents: number
   shippingCents: number
+  taxCents?: number
   discountCents: number
   discountCode: string | null
   totalCents: number
@@ -195,6 +197,7 @@ export type NewsletterSubscriber = {
 
 export type StoreConfig = {
   paymentsEnabled: boolean
+  taxEnabled?: boolean
   welcomeCode: string
   welcomeDiscountPct: number
   loyalty: {

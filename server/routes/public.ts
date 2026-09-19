@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { db, rawArticles, rawPages } from '../db.ts'
 import { getCollection, getProduct, listCollections, listProducts } from '../catalog.ts'
-import { paymentsEnabled } from '../env.ts'
+import { env, paymentsEnabled } from '../env.ts'
 import { loyalty, SUBSCRIBABLE_TYPES, WELCOME_DISCOUNT_CODE, WELCOME_DISCOUNT_PCT } from '../loyalty.ts'
 import { sendContactAlert, sendWelcomeEmail } from '../email.ts'
 import { BULK_QUANTITIES, CONTACT_TOPIC_VALUES, TOPICS_WITH_ORDER_REF } from '../../src/lib/contactTopics.ts'
@@ -12,6 +12,7 @@ export const publicRouter = Router()
 publicRouter.get('/config', (_req, res) => {
   res.json({
     paymentsEnabled: paymentsEnabled(),
+    taxEnabled: env.stripeTax,
     welcomeCode: WELCOME_DISCOUNT_CODE,
     welcomeDiscountPct: WELCOME_DISCOUNT_PCT,
     loyalty: {

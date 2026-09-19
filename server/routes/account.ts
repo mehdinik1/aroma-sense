@@ -158,6 +158,7 @@ async function hydrateOrder(row: Record<string, unknown>) {
     createdAt: row.created_at,
     subtotalCents: row.subtotal_cents,
     shippingCents: row.shipping_cents,
+    taxCents: row.tax_cents ?? 0,
     discountCents: row.discount_cents,
     discountCode: row.discount_code,
     totalCents: row.total_cents,

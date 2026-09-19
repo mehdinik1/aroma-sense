@@ -72,6 +72,7 @@ export function AccountOrderDetail() {
             />
           )}
           <Row label="Shipping" value={data.shippingCents ? formatMoney(data.shippingCents) : 'Free'} />
+          {!!data.taxCents && <Row label="Tax" value={formatMoney(data.taxCents)} />}
           <Row label="Total" value={formatMoney(data.totalCents)} strong />
           {data.pointsEarned > 0 && (
             <p className="pt-1 text-xs text-primary">You earned {data.pointsEarned} points on this order.</p>

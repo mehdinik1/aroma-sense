@@ -239,6 +239,12 @@ export function CartPage() {
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="font-medium">{shippingCents ? formatMoney(shippingCents) : 'Free'}</span>
                 </div>
+                {config?.taxEnabled && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span className="text-muted-foreground">Calculated at checkout</span>
+                  </div>
+                )}
               </div>
               {!allSubscription && (
                 <div className="mt-3 rounded-lg bg-secondary/40 px-3 py-2.5 text-xs">

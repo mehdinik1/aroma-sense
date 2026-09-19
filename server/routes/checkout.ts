@@ -167,6 +167,7 @@ checkoutRouter.post('/checkout', async (req, res) => {
           type: 'fixed_amount',
           display_name: 'Standard shipping (3–6 business days)',
           fixed_amount: { amount: standardShippingCents(subtotalCents), currency: 'usd' },
+          ...(env.stripeTax ? { tax_behavior: 'exclusive' as const } : {}),
           delivery_estimate: {
             minimum: { unit: 'business_day', value: 3 },
             maximum: { unit: 'business_day', value: 6 },
@@ -178,6 +179,7 @@ checkoutRouter.post('/checkout', async (req, res) => {
           type: 'fixed_amount',
           display_name: 'Expedited shipping (2 business days)',
           fixed_amount: { amount: EXPEDITED_SHIPPING_CENTS, currency: 'usd' },
+          ...(env.stripeTax ? { tax_behavior: 'exclusive' as const } : {}),
           delivery_estimate: {
             minimum: { unit: 'business_day', value: 1 },
             maximum: { unit: 'business_day', value: 2 },
@@ -201,6 +203,7 @@ checkoutRouter.post('/checkout', async (req, res) => {
         price_data: {
           currency: 'usd',
           unit_amount: l.priceCents,
+          ...(env.stripeTax ? { tax_behavior: 'exclusive' as const } : {}),
           ...(isSubscription ? { recurring: { interval: 'month' as const } } : {}),
           product_data: {
             name:
@@ -211,6 +214,13 @@ checkoutRouter.post('/checkout', async (req, res) => {
           },
         },
       })),
+    }
+
+    if (env.stripeTax) {
+      // Prices are listed tax-exclusive (US convention). Product/shipping tax categories come from the
+      // defaults in Stripe's Tax settings, so classification stays with the store's accountant.
+      params.automatic_tax = { enabled: true }
+      if (isSubscription || stripeCustomerId) params.customer_update = { shipping: 'auto' } // required with a saved customer + shipping address
     }
 
     if (isSubscription) {
