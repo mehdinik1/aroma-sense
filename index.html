@@ -24,16 +24,72 @@
     <meta name="twitter:description" content="Spa-quality vitamin C aromatherapy showers. Filters chlorine, boosts pressure, and fills your shower with essential-oil aromatherapy." />
     <meta name="twitter:image" content="https://vitamincshower.com/products/as-luxe/0.jpg" />
     <link rel="canonical" href="https://vitamincshower.com/" />
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-48XZWER4VB"></script>
+    <!-- Analytics (Google tag): loads only with consent where required; see src/lib/consent.ts -->
     <script>
-      window.dataLayer = window.dataLayer || []
-      function gtag() {
-        dataLayer.push(arguments)
-      }
-      gtag('js', new Date())
-      // report only from the live site (never localhost/dev) and keep admin visits out of the data
-      if (location.hostname === 'vitamincshower.com' && !location.pathname.startsWith('/admin')) gtag('config', 'G-48XZWER4VB')
+      ;(function () {
+        var ID = 'G-48XZWER4VB'
+        var KEY = 'aroma-sense-consent-v1'
+        window.dataLayer = window.dataLayer || []
+        window.gtag = function () {
+          window.dataLayer.push(arguments)
+        }
+        // report only from the live site (never localhost/dev) and keep admin visits out of the data
+        var live = location.hostname === 'vitamincshower.com' && location.pathname.indexOf('/admin') !== 0
+        // window.__geo is injected at the edge (server/seo-worker.ts); if missing we ask first
+        var required = !(window.__geo && window.__geo.r === false)
+        function stored() {
+          try {
+            var v = JSON.parse(localStorage.getItem(KEY))
+            if (v && (v.a === 'granted' || v.a === 'denied') && Date.now() - v.t < 31536000000) return v.a
+          } catch (e) {}
+          return null
+        }
+        function decision() {
+          var s = stored()
+          if (s) return s
+          if (navigator.globalPrivacyControl === true) return 'denied' // GPC counts as an opt-out
+          return required ? 'unset' : 'granted'
+        }
+        function clearCookies() {
+          document.cookie.split(';').forEach(function (c) {
+            var name = c.split('=')[0].trim()
+            if (name !== '_ga' && name.indexOf('_ga_') !== 0) return
+            var parts = location.hostname.split('.')
+            for (var i = 0; i < parts.length - 1; i++) {
+              document.cookie = name + '=; Max-Age=0; path=/; domain=' + parts.slice(i).join('.')
+            }
+            document.cookie = name + '=; Max-Age=0; path=/'
+          })
+        }
+        var api = (window.__analytics = {
+          required: required,
+          loaded: false,
+          decision: decision,
+          load: function () {
+            if (api.loaded || !live) return
+            api.loaded = true
+            window['ga-disable-' + ID] = false
+            var s = document.createElement('script')
+            s.async = true
+            s.src = 'https://www.googletagmanager.com/gtag/js?id=' + ID
+            document.head.appendChild(s)
+            window.gtag('js', new Date())
+            window.gtag('config', ID)
+          },
+          set: function (choice) {
+            try {
+              localStorage.setItem(KEY, JSON.stringify({ a: choice, t: Date.now() }))
+            } catch (e) {}
+            if (choice === 'granted') api.load()
+            else {
+              window['ga-disable-' + ID] = true
+              clearCookies()
+            }
+            window.dispatchEvent(new Event('aroma-consent'))
+          },
+        })
+        if (decision() === 'granted') api.load()
+      })()
     </script>
   </head>
   <body>

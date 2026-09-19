@@ -16,6 +16,7 @@ import {
   ogImage,
   type SeoInput,
 } from '../src/lib/seoShared.ts'
+import { consentRequired } from '../src/lib/consentRegions.ts'
 
 type Env = { ASSETS: Fetcher }
 type Resolved = { status: number; seo: SeoInput; noindex: boolean }
@@ -74,7 +75,7 @@ const attr = (name: string, value: string) => ({
   },
 })
 
-function rewrite(res: Response, { seo, noindex }: Resolved) {
+function rewrite(res: Response, { seo, noindex }: Resolved, consentNeeded: boolean) {
   const image = ogImage(seo.image)
   const url = abs(seo.path)
   const description = seo.description || undefined
@@ -94,6 +95,8 @@ function rewrite(res: Response, { seo, noindex }: Resolved) {
   }
   r.on('head', {
     element(el) {
+      // must run before the analytics loader in index.html, so it goes first in <head>
+      el.prepend(`<script>window.__geo={r:${consentNeeded}}</script>`, { html: true })
       if (noindex) el.append('<meta name="robots" content="noindex,follow">', { html: true })
       if (seo.jsonLd?.length) {
         const json = JSON.stringify(seo.jsonLd.length === 1 ? seo.jsonLd[0] : seo.jsonLd).replace(/</g, '\\u003c')
@@ -125,7 +128,7 @@ export default {
     const resolved = resolve(url.pathname)
     // always serve the app shell (crawlers don't send the navigation headers SPA fallback keys on)
     const shell = await env.ASSETS.fetch(new Request(new URL('/', url), { headers: request.headers }))
-    const out = rewrite(shell, resolved)
+    const out = rewrite(shell, resolved, consentRequired(request.cf?.country, request.cf?.isEUCountry))
     const headers = new Headers(out.headers)
     if (resolved.noindex) headers.set('X-Robots-Tag', 'noindex, follow')
     headers.delete('content-length')

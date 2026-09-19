@@ -22,6 +22,7 @@ const dollars = (cents: number) => Math.round(cents) / 100
 export function track(event: string, params: Record<string, unknown> = {}) {
   try {
     if (location.pathname.startsWith('/admin')) return
+    if (window.__analytics?.decision() !== 'granted') return // no consent, no events
     window.gtag?.('event', event, params)
   } catch {
     /* analytics must never break the store */

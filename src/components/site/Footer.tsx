@@ -1,4 +1,5 @@
 import { useState, type ComponentType } from 'react'
+import { openConsentSettings } from '@/lib/consent'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Check } from 'lucide-react'
 import { Container } from './Container'
@@ -173,7 +174,12 @@ export function Footer() {
       <div className="border-t border-border">
         <Container className="flex flex-col items-center justify-between gap-2 py-5 text-xs text-muted-foreground sm:flex-row">
           <span>© {new Date().getFullYear()} Aroma Sense. All rights reserved.</span>
-          <span>{site.currencyNote} · Secure checkout by Stripe</span>
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <button type="button" onClick={openConsentSettings} className="underline-offset-2 hover:text-foreground hover:underline">
+              Cookie settings
+            </button>
+            <span>{site.currencyNote} · Secure checkout by Stripe</span>
+          </span>
         </Container>
       </div>
     </footer>

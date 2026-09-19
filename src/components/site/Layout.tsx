@@ -4,6 +4,7 @@ import { Navbar } from './Navbar'
 import { Footer } from './Footer'
 import { CartDrawer } from './CartDrawer'
 import { AccessibilityWidget } from './AccessibilityWidget'
+import { ConsentBanner } from './ConsentBanner'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -29,6 +30,7 @@ export function Layout() {
       <Footer />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
       <AccessibilityWidget />
+      <ConsentBanner />
     </div>
   )
 }
