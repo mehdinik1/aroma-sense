@@ -21,6 +21,8 @@ export const env = {
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
   resendApiKey: process.env.RESEND_API_KEY || '',
   emailFrom: process.env.EMAIL_FROM || 'Aroma Sense <orders@vitamincshower.com>',
+  // welcome / cart reminder / review request: a monitored mailbox people can reply to
+  marketingFrom: process.env.MARKETING_FROM || 'Aroma Sense <hello@vitamincshower.com>',
   adminNotifyEmail: process.env.ADMIN_NOTIFY_EMAIL || 'admin@vitamincshower.com',
   supportEmail: process.env.SUPPORT_EMAIL || 'hello@vitamincshower.com',
   apiUrl: process.env.API_URL || 'https://api.vitamincshower.com',

@@ -19,7 +19,7 @@ const SERIF = "Georgia,'Times New Roman',serif"
 const SANS = "-apple-system,'Segoe UI',Helvetica,Arial,sans-serif"
 
 // Never throws — an email failure must not break checkout fulfilment or form submission.
-async function send(opts: { to: string; subject: string; html: string; replyTo?: string; headers?: Record<string, string> }): Promise<boolean> {
+async function send(opts: { to: string; subject: string; html: string; replyTo?: string; headers?: Record<string, string>; from?: string }): Promise<boolean> {
   if (!env.resendApiKey) return false
   const text = opts.html
     .replace(/<(style|head)[\s\S]*?<\/\1>/gi, '')
@@ -39,7 +39,7 @@ async function send(opts: { to: string; subject: string; html: string; replyTo?:
       method: 'POST',
       headers: { Authorization: `Bearer ${env.resendApiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: env.emailFrom,
+        from: opts.from ?? env.emailFrom,
         to: opts.to,
         subject: opts.subject,
         html: opts.html,
@@ -317,6 +317,7 @@ export async function sendWelcomeEmail(to: string, code: string, percentOff: num
     to,
     replyTo: env.supportEmail,
     subject: `Welcome to Aroma Sense — here's ${percentOff}% off`,
+    from: env.marketingFrom,
     headers: { 'List-Unsubscribe': `<${await unsubscribeApiUrl(to)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     html: layout({
       unsubscribeUrl,
@@ -354,6 +355,7 @@ export async function sendAbandonedCartEmail(o: {
     to: o.email,
     replyTo: env.supportEmail,
     subject: 'You left something in your cart',
+    from: env.marketingFrom,
     headers: { 'List-Unsubscribe': `<${await unsubscribeApiUrl(o.email)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     html: layout({
       preheader: 'Your cart is saved. Pick up where you left off.',
@@ -386,6 +388,7 @@ export async function sendReviewRequestEmail(o: {
     to: o.email,
     replyTo: env.supportEmail,
     subject: 'How is your Aroma Sense order?',
+    from: env.marketingFrom,
     headers: { 'List-Unsubscribe': `<${await unsubscribeApiUrl(o.email)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     html: layout({
       preheader: 'Tell other shoppers what you think. It takes about a minute.',
